@@ -1,5 +1,7 @@
 import { useState, useRef } from "react";
 import { CheckCircle2, ImagePlus, X, Scissors } from "lucide-react";
+import { createService } from "../services/apiSevirce";
+import { saveServiceImage } from "../services/imageStorage";
 
 interface ServiceRegisterProps {
   businessName: string;
@@ -30,7 +32,7 @@ export default function ServiceRegister({ businessName, onSuccess }: ServiceRegi
   const [success, setSuccess] = useState(false);
   const imageRef = useRef<HTMLInputElement>(null);
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
     const errs: Record<string, string> = {};
     if (serviceName.trim().length < 3) errs.name = "Mínimo 3 caracteres.";
@@ -40,8 +42,44 @@ export default function ServiceRegister({ businessName, onSuccess }: ServiceRegi
     const pr = Number(price);
     if (price === "" || isNaN(pr) || pr < 0) errs.price = "El precio no puede ser negativo.";
     if (Object.keys(errs).length) { setErrors(errs); return; }
-    setErrors({});
-    setSuccess(true);
+
+    const token = sessionStorage.getItem("token");
+    const businessId = Number(sessionStorage.getItem("idNegocio"));
+    if (!token) {
+      setErrors({ name: "Tu sesión expiró. Inicia sesión nuevamente." });
+      return;
+    }
+    if (!Number.isInteger(businessId) || businessId <= 0) {
+      setErrors({ name: "No se encontró el negocio asociado." });
+      return;
+    }
+
+    try {
+      const createdService = await createService(businessId, {
+        nombre: serviceName.trim(),
+        duracionMinutos: Number(duration),
+        precio: Number(price),
+        descripcion: description.trim(),
+      }, token);
+
+      if (image) {
+        const serviceData = createdService as { idServicio?: number; id?: number };
+        const imageKey = String(serviceData.idServicio || serviceData.id || `${businessId}:${serviceName.trim()}`);
+        await saveServiceImage(imageKey, image);
+      }
+
+      setErrors({});
+      setSuccess(true);
+    } catch (error) {
+      const apiError = error as Error & { fields?: Record<string, string> };
+      const fields = apiError.fields || {};
+      setErrors({
+        name: fields.nombre || apiError.message,
+        description: fields.descripcion,
+        duration: fields.duracionMinutos,
+        price: fields.precio,
+      });
+    }
   }
 
   return (
