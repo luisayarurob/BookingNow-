@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Eye, EyeOff, CheckCircle2, X } from "lucide-react";
+import { registerClient, registerProvider } from "../services/apiRegister";
 
 interface RegisterProps {
   onGoLogin: () => void;
@@ -27,6 +28,17 @@ const inputBase =
   "w-full rounded-xl border px-4 py-3 text-sm outline-none transition-all placeholder-[#8D93CB] bg-white/60 focus:ring-2 focus:ring-[#F7769B]/40 focus:border-[#F7769B]";
 const inputOk = "border-[#E6C1C6]";
 const inputErr = "border-red-400 focus:ring-red-300/40 focus:border-red-400";
+
+function mapApiErrors(fields: Record<string, string> | undefined, message: string) {
+  const errors: Record<string, string> = {};
+  if (fields?.correo) errors.email = fields.correo;
+  if (fields?.nombreUsuario) errors.user = fields.nombreUsuario;
+  if (fields?.contrasena) errors.pw = fields.contrasena;
+  if (fields?.razonSocial) errors.razon = fields.razonSocial;
+  if (fields?.nit) errors.nit = fields.nit;
+  if (!Object.keys(errors).length) errors.email = message;
+  return errors;
+}
 
 function Field({
   label, value, onChange, type = "text", placeholder, error, suffix,
@@ -71,7 +83,7 @@ export default function Register({ onGoLogin }: RegisterProps) {
   const [pPw, setPPw] = useState("");
   const [pErrors, setPErrors] = useState<Record<string, string>>({});
 
-  function submitCliente(e: React.FormEvent) {
+  async function submitCliente(e: React.FormEvent) {
     e.preventDefault();
     const errs: Record<string, string> = {};
     if (!EMAIL_REGEX.test(cEmail)) errs.email = "Correo no válido.";
@@ -81,11 +93,22 @@ export default function Register({ onGoLogin }: RegisterProps) {
     const pwErr = validatePassword(cPw);
     if (pwErr) errs.pw = pwErr;
     if (Object.keys(errs).length) { setCErrors(errs); return; }
-    setCErrors({});
-    setSuccess(true);
+
+    try {
+      await registerClient({
+        correo: cEmail.trim(),
+        nombreUsuario: cUser.trim(),
+        contrasena: cPw,
+      });
+      setCErrors({});
+      setSuccess(true);
+    } catch (error) {
+      const apiError = error as Error & { fields?: Record<string, string> };
+      setCErrors(mapApiErrors(apiError.fields, apiError.message));
+    }
   }
 
-  function submitProveedor(e: React.FormEvent) {
+  async function submitProveedor(e: React.FormEvent) {
     e.preventDefault();
     const errs: Record<string, string> = {};
     if (!EMAIL_REGEX.test(pEmail)) errs.email = "Correo no válido.";
@@ -99,8 +122,21 @@ export default function Register({ onGoLogin }: RegisterProps) {
     const pwErr = validatePassword(pPw);
     if (pwErr) errs.pw = pwErr;
     if (Object.keys(errs).length) { setPErrors(errs); return; }
-    setPErrors({});
-    setSuccess(true);
+
+    try {
+      await registerProvider({
+        correo: pEmail.trim(),
+        nombreUsuario: pUser.trim(),
+        contrasena: pPw,
+        razonSocial: pRazon.trim(),
+        nit: pNit.trim(),
+      });
+      setPErrors({});
+      setSuccess(true);
+    } catch (error) {
+      const apiError = error as Error & { fields?: Record<string, string> };
+      setPErrors(mapApiErrors(apiError.fields, apiError.message));
+    }
   }
 
   return (
