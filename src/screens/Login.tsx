@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { iniciarSesion } from "../services/apiService";
 import { Eye, EyeOff, AlertTriangle, Lock } from "lucide-react";
 
 interface LoginProps {
@@ -6,27 +7,38 @@ interface LoginProps {
   onSuccess: (role: "cliente" | "proveedor") => void;
 }
 
-const VALID_CREDENTIALS = [
-  { email: "cliente@demo.com", password: "Cliente1!", role: "cliente" as const },
-  { email: "proveedor@demo.com", password: "Proveedor1!", role: "proveedor" as const },
-  { email: "proveedor2@demo.com", password: "Proveedor1!", role: "proveedor" as const },
-];
-const BLOCKED = ["bloqueado@demo.com"];
-
 export default function Login({ onGoRegister, onSuccess }: LoginProps) {
   const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState<"credentials" | "empty" | "blocked" | null>(null);
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!email.trim() || !pw.trim()) { setError("empty"); return; }
-    if (BLOCKED.includes(email)) { setError("blocked"); return; }
-    const match = VALID_CREDENTIALS.find(c => c.email === email && c.password === pw);
-    if (!match) { setError("credentials"); return; }
-    setError(null);
-    onSuccess(match.role);
+
+    if (!email.trim() || !pw.trim()) {
+      setError("empty");
+      return;
+    }
+
+    try {
+      const data = await iniciarSesion(email, pw);
+      console.log("Respuesta del backend:", data);
+
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("cuenta", JSON.stringify(data.cuenta));
+
+      setError(null);
+
+      const role = data.cuenta?.rol?.toLowerCase();
+
+      if (role === "cliente" || role === "proveedor") {
+        onSuccess(role);
+      }
+    } catch (error) {
+      console.error(error);
+      setError("credentials");
+    }
   }
 
   const inputBase =
