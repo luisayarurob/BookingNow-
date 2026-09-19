@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from "react";
 import { CheckCircle2, Upload, X, ImagePlus, Building2 } from "lucide-react";
+import { registrarNegocio } from "../services/apiService";
 
 interface BusinessRegisterProps {
   onSuccess: () => void;
@@ -72,18 +73,45 @@ export default function BusinessRegister({ onSuccess }: BusinessRegisterProps) {
     setGalleryPreviews(prev => prev.filter((_, i) => i !== idx));
   }
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
+
     const errs: Record<string, string> = {};
+
     if (name.trim().length < 3) errs.name = "Mínimo 3 caracteres.";
     if (!EMAIL_REGEX.test(email)) errs.email = "Correo no válido.";
     if (!phone.trim()) errs.phone = "Campo requerido.";
     if (!isVirtual && !address.trim()) errs.address = "Ingresa la dirección del negocio.";
     if (!category) errs.category = "Selecciona una categoría.";
     if (!mainPhoto) errs.mainPhoto = "Agrega una foto principal.";
-    if (Object.keys(errs).length) { setErrors(errs); return; }
+
+    if (Object.keys(errs).length) {
+      setErrors(errs);
+      return;
+    }
+
     setErrors({});
-    setSuccess(true);
+
+    try {
+      const datos = {
+        nombre: name,
+        correo: email,
+        numContacto: phone,
+        direccion: address,
+        categoria: category,
+        modalidadVirtual: isVirtual,
+        fotoPrincipal: null,
+        galeria: []
+      };
+
+      const respuesta = await registrarNegocio(datos);
+
+      console.log("Respuesta del backend:", respuesta);
+
+      setSuccess(true);
+    } catch (error) {
+      console.error("Error al registrar negocio:", error);
+    }
   }
 
   return (
