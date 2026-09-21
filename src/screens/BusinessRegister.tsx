@@ -108,6 +108,16 @@ export default function BusinessRegister({ onSuccess }: BusinessRegisterProps) {
 
       console.log("Respuesta del backend:", respuesta);
 
+      const businessData = respuesta as {
+        idNegocio?: number;
+        id?: number;
+        negocio?: { idNegocio?: number; id?: number };
+      };
+      const businessId = businessData.idNegocio || businessData.id || businessData.negocio?.idNegocio || businessData.negocio?.id;
+      if (businessId) {
+        localStorage.setItem("idNegocio", String(businessId));
+      }
+
       setSuccess(true);
     } catch (error) {
       console.error("Error al registrar negocio:", error);

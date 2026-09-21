@@ -43,8 +43,8 @@ export default function ServiceRegister({ businessName, onSuccess }: ServiceRegi
     if (price === "" || isNaN(pr) || pr < 0) errs.price = "El precio no puede ser negativo.";
     if (Object.keys(errs).length) { setErrors(errs); return; }
 
-    const token = sessionStorage.getItem("token");
-    const businessId = Number(sessionStorage.getItem("idNegocio"));
+    const token = localStorage.getItem("token");
+    const businessId = Number(localStorage.getItem("idNegocio"));
     if (!token) {
       setErrors({ name: "Tu sesión expiró. Inicia sesión nuevamente." });
       return;
