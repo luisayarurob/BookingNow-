@@ -15,6 +15,43 @@ interface ApiErrorResponse {
     detail?: string;
 }
 
+export interface Business {
+    idNegocio?: number;
+    id?: number;
+    nombre?: string;
+    [key: string]: unknown;
+}
+
+export interface MyBusinessResponse {
+    puedeRegistrar?: boolean;
+    negocio?: Business | null;
+}
+
+export interface BusinessService {
+    idServicio?: number;
+    id?: number;
+    nombre: string;
+    duracionMinutos: number;
+    precio: number;
+    descripcion: string;
+    imagenReferencia?: string;
+    rating?: number;
+}
+
+async function authorizedRequest(path: string) {
+    const token = localStorage.getItem("token");
+    if (!token) throw new Error("No hay una sesión iniciada");
+
+    const response = await fetch(`${API_URL}${path}`, {
+        headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        throw new Error(data.detail || `No fue posible consultar la información (${response.status})`);
+    }
+    return data;
+}
+
 export async function iniciarSesion(correo: string, contrasena: string): Promise<LoginResponse> {
     const response = await fetch(`${API_URL}/api/auth/login`, {
         method: "POST",
@@ -58,4 +95,12 @@ export async function registrarNegocio(datos: Record<string, unknown>) {
     }
 
     return await response.json();
+}
+
+export async function obtenerMiNegocio(): Promise<MyBusinessResponse> {
+    return authorizedRequest("/api/negocios/mio") as Promise<MyBusinessResponse>;
+}
+
+export async function listarServicios(businessId: number): Promise<BusinessService[]> {
+    return authorizedRequest(`/api/negocios/${businessId}/servicios`) as Promise<BusinessService[]>;
 }

@@ -1,66 +1,17 @@
-import { useState } from "react";
 import { Clock, DollarSign, Plus, Scissors, Star } from "lucide-react";
-
-interface Service {
-  id: number;
-  name: string;
-  description: string;
-  duration: number;
-  price: number;
-  image: string;
-  rating: number;
-}
+import type { BusinessService } from "../services/apiService.ts";
 
 interface ServiceListProps {
   businessName: string;
+  services: BusinessService[];
   onAddService: () => void;
 }
-
-const DEMO_SERVICES: Service[] = [
-  {
-    id: 1,
-    name: "Manicura semipermanente",
-    description: "Esmaltado de larga duración con acabado impecable. Incluye limpieza, forma y gelificación UV.",
-    duration: 60,
-    price: 75000,
-    image: "https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&h=400&fit=crop&auto=format",
-    rating: 4.9,
-  },
-  {
-    id: 2,
-    name: "Pedicura relajante",
-    description: "Baño de pies, exfoliación, hidratación profunda y esmaltado a tu elección.",
-    duration: 75,
-    price: 65000,
-    image: "https://images.unsplash.com/photo-1519415943484-9fa1873496d4?w=600&h=400&fit=crop&auto=format",
-    rating: 4.8,
-  },
-  {
-    id: 3,
-    name: "Depilación facial con hilo",
-    description: "Técnica precisa y suave para cejas perfectas, bigote y zona perimetral.",
-    duration: 30,
-    price: 35000,
-    image: "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=600&h=400&fit=crop&auto=format",
-    rating: 4.7,
-  },
-  {
-    id: 4,
-    name: "Maquillaje social",
-    description: "Maquillaje profesional para ocasiones especiales. Incluye base, corrector, sombras y labios.",
-    duration: 90,
-    price: 120000,
-    image: "https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?w=600&h=400&fit=crop&auto=format",
-    rating: 5.0,
-  },
-];
 
 function formatPrice(p: number) {
   return new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(p);
 }
 
-export default function ServiceList({ businessName, onAddService }: ServiceListProps) {
-  const [services] = useState<Service[]>(DEMO_SERVICES);
+export default function ServiceList({ businessName, services, onAddService }: ServiceListProps) {
 
   return (
     <div className="min-h-screen bg-[#FFDDED]">
@@ -114,7 +65,7 @@ export default function ServiceList({ businessName, onAddService }: ServiceListP
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {services.map(s => (
-              <ServiceCard key={s.id} service={s} />
+              <ServiceCard key={s.idServicio || s.id} service={s} />
             ))}
             {/* Add card */}
             <button
@@ -133,34 +84,38 @@ export default function ServiceList({ businessName, onAddService }: ServiceListP
   );
 }
 
-function ServiceCard({ service }: { service: Service }) {
+function ServiceCard({ service }: { service: BusinessService }) {
   return (
     <div className="group bg-[#FCF6EF] rounded-2xl border border-[#E6C1C6] overflow-hidden hover:shadow-lg hover:shadow-[#F7769B]/10 hover:-translate-y-1 transition-all duration-200 flex flex-col">
       <div className="relative h-44 bg-[#FFDDED] overflow-hidden">
-        <img
-          src={service.image}
-          alt={service.name}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-        />
+        {service.imagenReferencia && (
+          <img
+            src={service.imagenReferencia}
+            alt={service.nombre}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-[#493333]/20 to-transparent" />
-        <div className="absolute top-3 right-3 flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1">
-          <Star size={11} className="text-[#F7769B] fill-[#F7769B]" />
-          <span className="text-xs font-semibold text-[#493333]">{service.rating.toFixed(1)}</span>
-        </div>
+        {typeof service.rating === "number" && (
+          <div className="absolute top-3 right-3 flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1">
+            <Star size={11} className="text-[#F7769B] fill-[#F7769B]" />
+            <span className="text-xs font-semibold text-[#493333]">{service.rating.toFixed(1)}</span>
+          </div>
+        )}
       </div>
 
       <div className="p-4 flex flex-col gap-2 flex-1">
-        <h3 className="font-display text-base font-semibold text-[#493333] leading-snug">{service.name}</h3>
-        <p className="text-xs text-[#493333]/60 leading-relaxed line-clamp-2">{service.description}</p>
+        <h3 className="font-display text-base font-semibold text-[#493333] leading-snug">{service.nombre}</h3>
+        <p className="text-xs text-[#493333]/60 leading-relaxed line-clamp-2">{service.descripcion}</p>
 
         <div className="mt-auto pt-3 border-t border-[#E6C1C6] flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-[#8D93CB]">
             <Clock size={13} strokeWidth={1.5} />
-            <span className="text-xs font-medium text-[#493333]/70">{service.duration} min</span>
+            <span className="text-xs font-medium text-[#493333]/70">{service.duracionMinutos} min</span>
           </div>
           <div className="flex items-center gap-1 text-[#F7769B]">
             <DollarSign size={13} strokeWidth={2} />
-            <span className="text-sm font-bold text-[#493333]">{formatPrice(service.price)}</span>
+            <span className="text-sm font-bold text-[#493333]">{formatPrice(service.precio)}</span>
           </div>
         </div>
       </div>
