@@ -1,7 +1,9 @@
 import { API_URL } from "../config/app";
 
 interface LoginResponse {
-    token: string;
+    accessToken: string;
+    expiresIn?: number;
+    tokenType?: string;
     cuenta?: {
         rol?: string;
         [key: string]: unknown;

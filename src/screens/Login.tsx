@@ -26,7 +26,7 @@ export default function Login({ onGoRegister, onSuccess }: LoginProps) {
       const data = await iniciarSesion(email, pw);
       console.log("Respuesta del backend:", data);
 
-      localStorage.setItem("token", data.token);
+      localStorage.setItem("token", data.accessToken);
       localStorage.setItem("cuenta", JSON.stringify(data.cuenta));
 
       setError(null);
