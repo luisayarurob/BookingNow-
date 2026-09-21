@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { iniciarSesion } from "../services/apiService";
+import { iniciarSesion } from "../services/apiService.ts";
 import { Eye, EyeOff, AlertTriangle, Lock } from "lucide-react";
 
 interface LoginProps {

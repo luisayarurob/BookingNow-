@@ -1,6 +1,19 @@
 import { API_URL } from "../config/app";
 
-export async function iniciarSesion(correo, contrasena) {
+interface LoginResponse {
+    token: string;
+    cuenta?: {
+        rol?: string;
+        [key: string]: unknown;
+    };
+    [key: string]: unknown;
+}
+
+interface ApiErrorResponse {
+    detail?: string;
+}
+
+export async function iniciarSesion(correo: string, contrasena: string): Promise<LoginResponse> {
     const response = await fetch(`${API_URL}/api/auth/login`, {
         method: "POST",
         headers: {
@@ -12,7 +25,7 @@ export async function iniciarSesion(correo, contrasena) {
         })
     });
 
-    const data = await response.json().catch(() => ({}));
+    const data = (await response.json().catch(() => ({}))) as LoginResponse & ApiErrorResponse;
 
     if (!response.ok) {
         throw new Error(data.detail || `No fue posible iniciar sesión (${response.status})`);
@@ -21,7 +34,7 @@ export async function iniciarSesion(correo, contrasena) {
     return data;
 }
 
-export async function registrarNegocio(datos) {
+export async function registrarNegocio(datos: Record<string, unknown>) {
     const token = localStorage.getItem("token");
 
     if (!token) {

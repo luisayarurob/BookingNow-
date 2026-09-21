@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from "react";
 import { CheckCircle2, Upload, X, ImagePlus, Building2 } from "lucide-react";
-import { registrarNegocio } from "../services/apiService";
+import { registrarNegocio } from "../services/apiService.ts";
 
 interface BusinessRegisterProps {
   onSuccess: () => void;
