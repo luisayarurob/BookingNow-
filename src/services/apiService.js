@@ -1,4 +1,4 @@
-const API_URL = "http://3.136.161.165:8080";
+import { API_URL } from "../config/app";
 
 export async function iniciarSesion(correo, contrasena) {
     const response = await fetch(`${API_URL}/api/auth/login`, {
