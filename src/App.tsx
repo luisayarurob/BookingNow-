@@ -6,6 +6,7 @@ import Login from "./screens/Login";
 import BusinessRegister from "./screens/BusinessRegister";
 import ServiceRegister from "./screens/ServiceRegister";
 import ServiceList from "./screens/ServiceList";
+import Home from "./screens/Home";
 import type { Role, Screen } from "./types/navigation";
 import { listarServicios, obtenerMiNegocio } from "./services/apiService.ts";
 import type { BusinessService } from "./services/apiService.ts";
@@ -14,13 +15,19 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>("login");
   const [role, setRole] = useState<Role>("proveedor");
   const [services, setServices] = useState<BusinessService[]>([]);
+  const [businessName, setBusinessName] = useState<string>(BUSINESS_NAME);
 
   async function handleLoginSuccess(r: Role) {
     setRole(r);
     if (r === "proveedor") {
       try {
         const result = await obtenerMiNegocio();
-        const businessId = result.negocio?.idNegocio || result.negocio?.id;
+        const business = result.negocio;
+        const businessId = business?.idNegocio || business?.id;
+        const resolvedBusinessName = business?.nombre || BUSINESS_NAME;
+
+        setBusinessName(resolvedBusinessName);
+        localStorage.setItem("nombreNegocio", resolvedBusinessName);
 
         if (!businessId) {
           setScreen("business-register");
@@ -36,7 +43,8 @@ export default function App() {
         setScreen("business-register");
       }
     } else {
-      setScreen("service-list");
+      setBusinessName(BUSINESS_NAME);
+      setScreen("home");
     }
   }
 
@@ -48,21 +56,29 @@ export default function App() {
           onSuccess={handleLoginSuccess}
         />
       )}
+      {screen === "home" && <Home />}
       {screen === "register" && (
         <Register onGoLogin={() => setScreen("login")} />
       )}
       {screen === "business-register" && (
-        <BusinessRegister onSuccess={() => setScreen("service-register")} />
+        <BusinessRegister
+          onSuccess={(registeredBusinessName) => {
+            const nextBusinessName = registeredBusinessName || BUSINESS_NAME;
+            setBusinessName(nextBusinessName);
+            localStorage.setItem("nombreNegocio", nextBusinessName);
+            setScreen("service-register");
+          }}
+        />
       )}
       {screen === "service-register" && (
         <ServiceRegister
-          businessName={BUSINESS_NAME}
+          businessName={businessName}
           onSuccess={() => setScreen("service-list")}
         />
       )}
       {screen === "service-list" && (
         <ServiceList
-          businessName={BUSINESS_NAME}
+          businessName={businessName}
           services={services}
           onAddService={() => setScreen("service-register")}
         />

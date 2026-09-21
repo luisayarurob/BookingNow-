@@ -8,6 +8,7 @@ interface DemoNavProps {
 const NAV_ITEMS: { id: Screen; label: string }[] = [
   { id: "login", label: "Login" },
   { id: "register", label: "Registro" },
+  { id: "home", label: "Home" },
 ];
 
 export default function DemoNav({ screen, onNavigate }: DemoNavProps) {
