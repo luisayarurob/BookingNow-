@@ -12,11 +12,13 @@ export async function iniciarSesion(correo, contrasena) {
         })
     });
 
+    const data = await response.json().catch(() => ({}));
+
     if (!response.ok) {
-        throw new Error("Credenciales incorrectas");
+        throw new Error(data.detail || `No fue posible iniciar sesión (${response.status})`);
     }
 
-    return await response.json();
+    return data;
 }
 
 export async function registrarNegocio(datos) {
