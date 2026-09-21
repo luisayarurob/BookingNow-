@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:8080";
+const API_URL = "http://3.136.161.165:8080";
 
 export async function iniciarSesion(correo, contrasena) {
     const response = await fetch(`${API_URL}/api/auth/login`, {
