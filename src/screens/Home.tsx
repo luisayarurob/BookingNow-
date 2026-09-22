@@ -1,4 +1,4 @@
-import { Construction, LogOut, Scissors } from "lucide-react";
+import { LogOut, Scissors, Sparkles, Wrench } from "lucide-react";
 
 interface HomeProps {
   onLogout?: () => void;
@@ -6,7 +6,8 @@ interface HomeProps {
 
 export default function Home({ onLogout }: HomeProps) {
   return (
-    <div className="min-h-screen bg-[#FFDDED]">
+    <div className="min-h-screen bg-[#FFDDED] flex flex-col">
+      {/* Header */}
       <header className="sticky top-0 z-10 border-b border-[#E6C1C6] bg-[#FCF6EF]/85 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
@@ -14,8 +15,12 @@ export default function Home({ onLogout }: HomeProps) {
               <Scissors className="text-[#F7769B]" size={18} strokeWidth={1.5} />
             </div>
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#8D93CB]">BookingNow</p>
-              <p className="font-display text-xl font-semibold text-[#493333]">Descubre más pronto...</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#8D93CB]">
+                BookingNow
+              </p>
+              <p className="font-display text-xl font-semibold text-[#493333]">
+                Vista Cliente
+              </p>
             </div>
           </div>
 
@@ -23,7 +28,7 @@ export default function Home({ onLogout }: HomeProps) {
             <button
               type="button"
               onClick={onLogout}
-              className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-100"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-colors border border-red-200"
             >
               <LogOut size={16} />
               <span>Cerrar sesión</span>
@@ -32,15 +37,30 @@ export default function Home({ onLogout }: HomeProps) {
         </div>
       </header>
 
-      <main className="flex min-h-[calc(100vh-73px)] items-center justify-center px-6 py-12">
-        <section className="w-full max-w-xl rounded-3xl border border-[#E6C1C6] bg-[#FCF6EF] p-10 text-center shadow-xl shadow-[#493333]/10">
-          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#F7769B]/15">
-            <Construction className="text-[#F7769B]" size={30} strokeWidth={1.5} />
+      {/* Main Container */}
+      <main className="flex-1 flex items-center justify-center p-6">
+        <div className="max-w-md w-full bg-[#FCF6EF] rounded-3xl border border-[#E6C1C6] p-8 text-center shadow-xl">
+          <div className="w-16 h-16 rounded-2xl bg-[#F7769B]/15 flex items-center justify-center mx-auto mb-5 text-[#F7769B]">
+            <Wrench size={32} strokeWidth={1.5} />
           </div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#8D93CB]">BookingNow</p>
-          <h1 className="font-display text-4xl font-semibold text-[#493333]">En construcción</h1>
-          <p className="mt-3 text-sm text-[#493333]/65">Estamos preparando esta experiencia para ti.</p>
-        </section>
+
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#F7C9D7] bg-[#FFDDED] px-3 py-1 text-xs font-semibold text-[#493333] mb-4">
+            <Sparkles size={13} className="text-[#F7769B]" />
+            Módulo en desarrollo
+          </div>
+
+          <h1 className="font-display text-3xl font-semibold text-[#493333] mb-3">
+            Página en proceso
+          </h1>
+
+          <p className="text-sm text-[#493333]/70 leading-relaxed mb-6">
+            Estamos diseñando y construyendo esta sección para ofrecerte la mejor experiencia de exploración y reserva de servicios.
+          </p>
+
+          <div className="p-4 rounded-2xl bg-[#FFDDED]/50 border border-[#E6C1C6] text-xs text-[#8D93CB] font-medium">
+            ¡Estará disponible muy pronto!
+          </div>
+        </div>
       </main>
     </div>
   );
