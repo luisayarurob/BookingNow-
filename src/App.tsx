@@ -84,7 +84,7 @@ export default function App() {
           onSuccess={handleLoginSuccess}
         />
       )}
-      {screen === "home" && <Home />}
+      {screen === "home" && <Home onLogout={handleLogout} />}
       {screen === "register" && (
         <Register onGoLogin={() => setScreen("login")} />
       )}
