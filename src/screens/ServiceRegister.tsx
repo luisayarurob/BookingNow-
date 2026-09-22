@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { CheckCircle2, ImagePlus, X, Scissors } from "lucide-react";
-import { createService } from "../services/apiSevirce";
+import { createService, type ServiceRegistration } from "../services/apiSevirce";
 
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -66,7 +66,7 @@ export default function ServiceRegister({ businessName, onSuccess }: ServiceRegi
     }
 
     try {
-      const payload = {
+      const payload: ServiceRegistration = {
         nombre: serviceName.trim(),
         duracionMinutos: Number(duration),
         precio: Number(price),

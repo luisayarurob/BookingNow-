@@ -36,18 +36,41 @@ export default function App() {
     localStorage.setItem("app_role", role);
   }, [role]);
 
-  useEffect(() => {
-    if (screen === "service-list" && businesses.length) {
-      Promise.all(
-        businesses.map(async business => ({
-          ...business,
-          services: await listarServicios(Number(business.idNegocio || business.id)),
-        })),
-      )
-        .then(setBusinesses)
-        .catch(console.error);
+  async function loadProviderBusinesses(token: string) {
+    const result = await obtenerMiNegocio(token);
+    const availableBusinesses = result.negocios?.length
+      ? result.negocios
+      : result.negocio
+        ? [result.negocio]
+        : [];
+
+    const loadedBusinesses = await Promise.all(
+      availableBusinesses.map(async business => ({
+        ...business,
+        services: await listarServicios(Number(business.idNegocio || business.id), token),
+      })),
+    );
+
+    setBusinesses(loadedBusinesses);
+    if (loadedBusinesses[0]?.nombre) {
+      setBusinessName(loadedBusinesses[0].nombre);
+      localStorage.setItem("nombreNegocio", loadedBusinesses[0].nombre);
     }
-  }, [screen]);
+    if (loadedBusinesses[0]?.idNegocio || loadedBusinesses[0]?.id) {
+      localStorage.setItem("idNegocio", String(loadedBusinesses[0].idNegocio || loadedBusinesses[0].id));
+    }
+    setServices(loadedBusinesses[0]?.services || []);
+    return loadedBusinesses;
+  }
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (role === "proveedor" && token && screen === "service-list") {
+      loadProviderBusinesses(token).catch(error => {
+        console.error("No fue posible restaurar los negocios del proveedor:", error);
+      });
+    }
+  }, [role, screen]);
 
   function handleLogout() {
     localStorage.clear();
@@ -67,35 +90,8 @@ export default function App() {
         const token = localStorage.getItem("token");
         if (!token) throw new Error("No se recibió el token de autenticación.");
 
-        const result = await obtenerMiNegocio(token);
-        const availableBusinesses = result.negocios?.length
-          ? result.negocios
-          : result.negocio
-            ? [result.negocio]
-            : [];
-        const business = availableBusinesses[0];
-        const businessId = business?.idNegocio || business?.id;
-        const resolvedBusinessName = business?.nombre || BUSINESS_NAME;
-
-        setBusinessName(resolvedBusinessName);
-        localStorage.setItem("nombreNegocio", resolvedBusinessName);
-
-        if (!businessId) {
-          setScreen("business-register");
-          return;
-        }
-
-        localStorage.setItem("idNegocio", String(businessId));
-        const loadedBusinesses = await Promise.all(
-          availableBusinesses.map(async availableBusiness => ({
-            ...availableBusiness,
-            services: await listarServicios(Number(availableBusiness.idNegocio || availableBusiness.id), token),
-          })),
-        );
-        setBusinesses(loadedBusinesses);
-        const businessServices = loadedBusinesses[0].services;
-        setServices(businessServices);
-        setScreen("service-list");
+        const loadedBusinesses = await loadProviderBusinesses(token);
+        setScreen(loadedBusinesses.length ? "service-list" : "business-register");
       } catch (error) {
         console.error("No fue posible cargar el negocio del proveedor:", error);
         setScreen("business-register");
