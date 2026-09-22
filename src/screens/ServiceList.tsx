@@ -1,21 +1,20 @@
-import { Clock, DollarSign, Plus, Scissors, Star } from "lucide-react";
+import { Clock, DollarSign, LogOut, Plus, Scissors, Star } from "lucide-react";
 import type { BusinessService } from "../services/apiService.ts";
 
 interface ServiceListProps {
   businessName: string;
   services: BusinessService[];
   onAddService: () => void;
+  onLogout?: () => void;
 }
 
 function formatPrice(p: number) {
   return new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(p);
 }
 
-export default function ServiceList({ businessName, services, onAddService }: ServiceListProps) {
-
+export default function ServiceList({ businessName, services, onAddService, onLogout }: ServiceListProps) {
   return (
     <div className="min-h-screen bg-[#FFDDED]">
-      {/* Header */}
       <header className="bg-[#FCF6EF] border-b border-[#E6C1C6] sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -27,18 +26,29 @@ export default function ServiceList({ businessName, services, onAddService }: Se
               <h2 className="font-display text-lg font-semibold text-[#493333] leading-tight">{businessName}</h2>
             </div>
           </div>
-          <button
-            onClick={onAddService}
-            className="flex items-center gap-2 bg-[#F7769B] text-white text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-[#f55d87] active:scale-[0.98] transition-all shadow-md shadow-[#F7769B]/30"
-          >
-            <Plus size={16} strokeWidth={2.5} />
-            Nuevo servicio
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={onAddService}
+              className="flex items-center gap-2 bg-[#F7769B] text-white text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-[#f55d87] active:scale-[0.98] transition-all shadow-md shadow-[#F7769B]/30"
+            >
+              <Plus size={16} strokeWidth={2.5} />
+              Nuevo servicio
+            </button>
+            {onLogout && (
+              <button
+                type="button"
+                onClick={onLogout}
+                className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-colors border border-red-200"
+              >
+                <LogOut size={16} />
+                <span>Cerrar sesión</span>
+              </button>
+            )}
+          </div>
         </div>
       </header>
 
       <main className="max-w-6xl mx-auto px-6 py-10">
-        {/* Hero line */}
         <div className="mb-10">
           <h1 className="font-display text-5xl font-semibold text-[#493333] leading-tight">
             Tus servicios
@@ -67,7 +77,6 @@ export default function ServiceList({ businessName, services, onAddService }: Se
             {services.map(s => (
               <ServiceCard key={s.idServicio || s.id} service={s} />
             ))}
-            {/* Add card */}
             <button
               onClick={onAddService}
               className="group flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-[#E6C1C6] min-h-[280px] hover:border-[#F7769B] hover:bg-[#FCF6EF] transition-all text-[#8D93CB] hover:text-[#F7769B]"
