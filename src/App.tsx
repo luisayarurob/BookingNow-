@@ -6,6 +6,7 @@ import BusinessRegister from "./screens/BusinessRegister";
 import ServiceRegister from "./screens/ServiceRegister";
 import ServiceList from "./screens/ServiceList";
 import Home from "./screens/Home";
+import ProviderNav from "./components/navigation/ProviderNav";
 import type { Role, Screen } from "./types/navigation";
 import { listarServicios, obtenerMiNegocio } from "./services/apiService.ts";
 import type { BusinessService } from "./services/apiService.ts";
@@ -44,6 +45,10 @@ export default function App() {
     setServices([]);
     setScreen("login");
   }
+
+  const showProviderNav = role === "proveedor" &&
+    screen !== "login" &&
+    screen !== "register";
 
   async function handleLoginSuccess(r: Role) {
     setRole(r);
@@ -109,6 +114,13 @@ export default function App() {
           businessName={businessName}
           services={services}
           onAddService={() => setScreen("service-register")}
+          onLogout={handleLogout}
+        />
+      )}
+      {showProviderNav && (
+        <ProviderNav
+          screen={screen}
+          onNavigate={setScreen}
           onLogout={handleLogout}
         />
       )}
