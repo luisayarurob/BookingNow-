@@ -3,12 +3,17 @@ import {
   ArrowRight,
   CalendarCheck2,
   Clock,
+  LogOut,
   MapPin,
   Search,
   Scissors,
   Sparkles,
   Star,
 } from "lucide-react";
+
+interface HomeProps {
+  onLogout?: () => void;
+}
 
 type HomeService = {
   id: number;
@@ -116,7 +121,7 @@ function formatPrice(value: number) {
   }).format(value);
 }
 
-export default function Home() {
+export default function Home({ onLogout }: HomeProps) {
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("Todas");
 
@@ -146,9 +151,21 @@ export default function Home() {
             </div>
           </div>
 
-          <button className="rounded-xl bg-[#F7769B] px-4 py-2 text-sm font-semibold text-white shadow-md shadow-[#F7769B]/30 transition hover:bg-[#f55d87]">
-            Mi agenda
-          </button>
+          <div className="flex items-center gap-3">
+            <button className="rounded-xl bg-[#F7769B] px-4 py-2 text-sm font-semibold text-white shadow-md shadow-[#F7769B]/30 transition hover:bg-[#f55d87]">
+              Mi agenda
+            </button>
+            {onLogout && (
+              <button
+                type="button"
+                onClick={onLogout}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-colors border border-red-200"
+              >
+                <LogOut size={16} />
+                <span>Cerrar sesión</span>
+              </button>
+            )}
+          </div>
         </div>
       </header>
 
