@@ -1,7 +1,18 @@
 import { useState, useRef } from "react";
 import { CheckCircle2, ImagePlus, X, Scissors } from "lucide-react";
 import { createService } from "../services/apiSevirce";
-import { saveServiceImage } from "../services/imageStorage";
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = typeof reader.result === "string" ? reader.result : "";
+      resolve(result);
+    };
+    reader.onerror = () => reject(new Error("No fue posible leer la imagen seleccionada."));
+    reader.readAsDataURL(file);
+  });
+}
 
 interface ServiceRegisterProps {
   businessName: string;
@@ -55,18 +66,18 @@ export default function ServiceRegister({ businessName, onSuccess }: ServiceRegi
     }
 
     try {
-      const createdService = await createService(businessId, {
+      const payload = {
         nombre: serviceName.trim(),
         duracionMinutos: Number(duration),
         precio: Number(price),
         descripcion: description.trim(),
-      }, token);
+      };
 
       if (image) {
-        const serviceData = createdService as { idServicio?: number; id?: number };
-        const imageKey = String(serviceData.idServicio || serviceData.id || `${businessId}:${serviceName.trim()}`);
-        await saveServiceImage(imageKey, image);
+        payload.imagenReferencia = await fileToBase64(image);
       }
+
+      await createService(businessId, payload, token);
 
       setErrors({});
       setSuccess(true);

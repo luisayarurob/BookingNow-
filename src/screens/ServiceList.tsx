@@ -12,6 +12,18 @@ function formatPrice(p: number) {
   return new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(p);
 }
 
+function getServiceImageSrc(image?: string) {
+  if (!image) return "";
+
+  const value = image.trim();
+  if (!value) return "";
+  if (value.startsWith("data:") || value.startsWith("http://") || value.startsWith("https://") || value.startsWith("blob:")) {
+    return value;
+  }
+
+  return `data:image/jpeg;base64,${value}`;
+}
+
 export default function ServiceList({ businesses, onAddService, onAddBusiness }: ServiceListProps) {
   const serviceCount = businesses.reduce((total, business) => total + business.services.length, 0);
 
@@ -106,7 +118,7 @@ function ServiceCard({ service }: { service: BusinessService }) {
       <div className="relative h-44 bg-[#FFDDED] overflow-hidden">
         {service.imagenReferencia && (
           <img
-            src={service.imagenReferencia}
+            src={getServiceImageSrc(service.imagenReferencia)}
             alt={service.nombre}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
