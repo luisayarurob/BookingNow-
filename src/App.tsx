@@ -1,5 +1,4 @@
-import { useState } from "react";
-import DemoNav from "./components/navigation/DemoNav";
+import { useState, useEffect } from "react";
 import { BUSINESS_NAME } from "./config/app";
 import Register from "./screens/Register";
 import Login from "./screens/Login";
@@ -12,13 +11,44 @@ import { listarServicios, obtenerMiNegocio } from "./services/apiService.ts";
 import type { BusinessService } from "./services/apiService.ts";
 
 export default function App() {
-  const [screen, setScreen] = useState<Screen>("login");
-  const [role, setRole] = useState<Role>("proveedor");
+  // 1. Recuperar pantalla, rol y nombre de negocio de localStorage para persistir tras presionar F5
+  const [screen, setScreen] = useState<Screen>(() => {
+    return (localStorage.getItem("app_screen") as Screen) || "login";
+  });
+
+  const [role, setRole] = useState<Role>(() => {
+    return (localStorage.getItem("app_role") as Role) || "proveedor";
+  });
+
   const [services, setServices] = useState<BusinessService[]>([]);
-  const [businessName, setBusinessName] = useState<string>(BUSINESS_NAME);
+
+  const [businessName, setBusinessName] = useState<string>(() => {
+    return localStorage.getItem("nombreNegocio") || BUSINESS_NAME;
+  });
+
+  // Guardar pantalla y rol automáticamente en localStorage al cambiar de vista
+  useEffect(() => {
+    localStorage.setItem("app_screen", screen);
+  }, [screen]);
+
+  useEffect(() => {
+    localStorage.setItem("app_role", role);
+  }, [role]);
+
+  // Recargar servicios desde el backend al hacer F5 si el usuario estaba en la lista de servicios
+  useEffect(() => {
+    const businessId = localStorage.getItem("idNegocio");
+    if (businessId && (screen === "service-list" || screen === "service-register")) {
+      listarServicios(Number(businessId))
+        .then(setServices)
+        .catch((err) => console.error("Error al recargar servicios:", err));
+    }
+  }, [screen]);
 
   async function handleLoginSuccess(r: Role) {
     setRole(r);
+    localStorage.setItem("app_role", r);
+
     if (r === "proveedor") {
       try {
         const result = await obtenerMiNegocio();
@@ -83,8 +113,6 @@ export default function App() {
           onAddService={() => setScreen("service-register")}
         />
       )}
-
-      <DemoNav screen={screen} onNavigate={setScreen} />
     </div>
   );
 }
