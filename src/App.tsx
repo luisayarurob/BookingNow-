@@ -64,7 +64,10 @@ export default function App() {
     setRole(r);
     if (r === "proveedor") {
       try {
-        const result = await obtenerMiNegocio();
+        const token = localStorage.getItem("token");
+        if (!token) throw new Error("No se recibió el token de autenticación.");
+
+        const result = await obtenerMiNegocio(token);
         const availableBusinesses = result.negocios?.length
           ? result.negocios
           : result.negocio
@@ -86,7 +89,7 @@ export default function App() {
         const loadedBusinesses = await Promise.all(
           availableBusinesses.map(async availableBusiness => ({
             ...availableBusiness,
-            services: await listarServicios(Number(availableBusiness.idNegocio || availableBusiness.id)),
+            services: await listarServicios(Number(availableBusiness.idNegocio || availableBusiness.id), token),
           })),
         );
         setBusinesses(loadedBusinesses);

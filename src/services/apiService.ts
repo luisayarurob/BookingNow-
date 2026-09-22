@@ -46,8 +46,7 @@ export interface BusinessService {
     rating?: number;
 }
 
-async function authorizedRequest(path: string) {
-    const token = localStorage.getItem("token");
+async function authorizedRequest(path: string, token = localStorage.getItem("token")) {
     if (!token) throw new Error("No hay una sesión iniciada");
 
     const response = await fetch(`${API_URL}${path}`, {
@@ -105,10 +104,10 @@ export async function registrarNegocio(datos: Record<string, unknown>) {
     return await response.json();
 }
 
-export async function obtenerMiNegocio(): Promise<MyBusinessResponse> {
-    return authorizedRequest("/api/negocios/mio") as Promise<MyBusinessResponse>;
+export async function obtenerMiNegocio(token: string): Promise<MyBusinessResponse> {
+    return authorizedRequest("/api/negocios/mio", token) as Promise<MyBusinessResponse>;
 }
 
-export async function listarServicios(businessId: number): Promise<BusinessService[]> {
-    return authorizedRequest(`/api/negocios/${businessId}/servicios`) as Promise<BusinessService[]>;
+export async function listarServicios(businessId: number, token?: string): Promise<BusinessService[]> {
+    return authorizedRequest(`/api/negocios/${businessId}/servicios`, token) as Promise<BusinessService[]>;
 }
