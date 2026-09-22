@@ -5,13 +5,14 @@ import type { BusinessService } from "../services/apiService.ts";
 interface ServiceListProps {
   businesses: BusinessWithServices[];
   onAddService: (businessId: number, businessName: string) => void;
+  onAddBusiness: () => void;
 }
 
 function formatPrice(p: number) {
   return new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(p);
 }
 
-export default function ServiceList({ businesses, onAddService }: ServiceListProps) {
+export default function ServiceList({ businesses, onAddService, onAddBusiness }: ServiceListProps) {
   const serviceCount = businesses.reduce((total, business) => total + business.services.length, 0);
 
   return (
@@ -27,6 +28,14 @@ export default function ServiceList({ businesses, onAddService }: ServiceListPro
               <h2 className="font-display text-lg font-semibold text-[#493333] leading-tight">Mis negocios</h2>
             </div>
           </div>
+          <button
+            type="button"
+            onClick={onAddBusiness}
+            className="flex items-center gap-2 rounded-xl bg-[#F7769B] px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-[#F7769B]/30 transition-all hover:bg-[#f55d87] active:scale-[0.98]"
+          >
+            <Plus size={16} strokeWidth={2.5} />
+            Agregar negocio
+          </button>
         </div>
       </header>
 

@@ -145,6 +145,7 @@ export default function App() {
       {screen === "service-list" && (
         <ServiceList
           businesses={businesses}
+          onAddBusiness={() => setScreen("business-register")}
           onAddService={(businessId, name) => {
             localStorage.setItem("idNegocio", String(businessId));
             setBusinessName(name);
