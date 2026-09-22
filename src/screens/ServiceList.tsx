@@ -1,18 +1,19 @@
-import { Clock, DollarSign, LogOut, Plus, Scissors, Star } from "lucide-react";
+import { Clock, DollarSign, Plus, Scissors, Star } from "lucide-react";
+import type { BusinessWithServices } from "../App";
 import type { BusinessService } from "../services/apiService.ts";
 
 interface ServiceListProps {
-  businessName: string;
-  services: BusinessService[];
-  onAddService: () => void;
-  onLogout?: () => void;
+  businesses: BusinessWithServices[];
+  onAddService: (businessId: number, businessName: string) => void;
 }
 
 function formatPrice(p: number) {
   return new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(p);
 }
 
-export default function ServiceList({ businessName, services, onAddService, onLogout }: ServiceListProps) {
+export default function ServiceList({ businesses, onAddService }: ServiceListProps) {
+  const serviceCount = businesses.reduce((total, business) => total + business.services.length, 0);
+
   return (
     <div className="min-h-screen bg-[#FFDDED]">
       <header className="bg-[#FCF6EF] border-b border-[#E6C1C6] sticky top-0 z-10">
@@ -23,27 +24,8 @@ export default function ServiceList({ businessName, services, onAddService, onLo
             </div>
             <div>
               <p className="text-xs text-[#493333]/50 font-medium">Catálogo de servicios</p>
-              <h2 className="font-display text-lg font-semibold text-[#493333] leading-tight">{businessName}</h2>
+              <h2 className="font-display text-lg font-semibold text-[#493333] leading-tight">Mis negocios</h2>
             </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={onAddService}
-              className="flex items-center gap-2 bg-[#F7769B] text-white text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-[#f55d87] active:scale-[0.98] transition-all shadow-md shadow-[#F7769B]/30"
-            >
-              <Plus size={16} strokeWidth={2.5} />
-              Nuevo servicio
-            </button>
-            {onLogout && (
-              <button
-                type="button"
-                onClick={onLogout}
-                className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-colors border border-red-200"
-              >
-                <LogOut size={16} />
-                <span>Cerrar sesión</span>
-              </button>
-            )}
           </div>
         </div>
       </header>
@@ -51,41 +33,57 @@ export default function ServiceList({ businessName, services, onAddService, onLo
       <main className="max-w-6xl mx-auto px-6 py-10">
         <div className="mb-10">
           <h1 className="font-display text-5xl font-semibold text-[#493333] leading-tight">
-            Tus servicios
+            Mis negocios
           </h1>
           <p className="text-[#493333]/60 mt-2">
-            {services.length} {services.length === 1 ? "servicio disponible" : "servicios disponibles"}
+            {businesses.length} {businesses.length === 1 ? "negocio" : "negocios"} · {serviceCount} {serviceCount === 1 ? "servicio" : "servicios"}
           </p>
         </div>
 
-        {services.length === 0 ? (
+        {businesses.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
             <div className="w-20 h-20 rounded-3xl bg-[#FCF6EF] border border-[#E6C1C6] flex items-center justify-center">
               <Scissors className="text-[#8D93CB]" size={36} strokeWidth={1} />
             </div>
-            <p className="font-display text-xl text-[#493333]">Aún no tienes servicios</p>
-            <p className="text-sm text-[#493333]/50 max-w-xs">Agrega tu primer servicio para que tus clientes puedan reservar contigo.</p>
-            <button
-              onClick={onAddService}
-              className="mt-2 bg-[#F7769B] text-white font-semibold px-6 py-3 rounded-xl hover:bg-[#f55d87] transition-colors"
-            >
-              Agregar servicio
-            </button>
+            <p className="font-display text-xl text-[#493333]">Aún no tienes negocios</p>
+            <p className="text-sm text-[#493333]/50 max-w-xs">Registra un negocio para comenzar a ofrecer tus servicios.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-            {services.map(s => (
-              <ServiceCard key={s.idServicio || s.id} service={s} />
-            ))}
-            <button
-              onClick={onAddService}
-              className="group flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-[#E6C1C6] min-h-[280px] hover:border-[#F7769B] hover:bg-[#FCF6EF] transition-all text-[#8D93CB] hover:text-[#F7769B]"
-            >
-              <div className="w-12 h-12 rounded-xl bg-current/10 flex items-center justify-center transition-transform group-hover:scale-110">
-                <Plus size={24} strokeWidth={1.5} />
-              </div>
-              <span className="text-sm font-semibold">Agregar servicio</span>
-            </button>
+          <div className="flex flex-col gap-10">
+            {businesses.map((business, index) => {
+              const businessId = business.idNegocio || business.id;
+              if (!businessId) return null;
+
+              return (
+                <section key={businessId}>
+                  <div className="mb-4 flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#8D93CB]">Negocio {index + 1}</p>
+                      <h2 className="font-display text-2xl font-semibold text-[#493333]">{business.nombre || "Sin nombre"}</h2>
+                    </div>
+                    <button
+                      onClick={() => onAddService(businessId, business.nombre || "Mi negocio")}
+                      className="flex shrink-0 items-center gap-2 rounded-xl bg-[#F7769B] px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-[#F7769B]/30 transition-all hover:bg-[#f55d87]"
+                    >
+                      <Plus size={16} strokeWidth={2.5} />
+                      Nuevo servicio
+                    </button>
+                  </div>
+
+                  {business.services.length === 0 ? (
+                    <div className="rounded-2xl border border-dashed border-[#E6C1C6] bg-[#FCF6EF]/60 px-6 py-10 text-center">
+                      <p className="text-sm text-[#493333]/55">Este negocio aún no tiene servicios.</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                      {business.services.map(service => (
+                        <ServiceCard key={service.idServicio || service.id} service={service} />
+                      ))}
+                    </div>
+                  )}
+                </section>
+              );
+            })}
           </div>
         )}
       </main>

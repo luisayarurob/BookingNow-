@@ -9,7 +9,11 @@ import Home from "./screens/Home";
 import ProviderNav from "./components/navigation/ProviderNav";
 import type { Role, Screen } from "./types/navigation";
 import { listarServicios, obtenerMiNegocio } from "./services/apiService.ts";
-import type { BusinessService } from "./services/apiService.ts";
+import type { Business, BusinessService } from "./services/apiService.ts";
+
+export interface BusinessWithServices extends Business {
+  services: BusinessService[];
+}
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>(() => {
@@ -19,6 +23,7 @@ export default function App() {
     return (localStorage.getItem("app_role") as Role) || "proveedor";
   });
   const [services, setServices] = useState<BusinessService[]>([]);
+  const [businesses, setBusinesses] = useState<BusinessWithServices[]>([]);
   const [businessName, setBusinessName] = useState<string>(() => {
     return localStorage.getItem("nombreNegocio") || BUSINESS_NAME;
   });
@@ -32,10 +37,14 @@ export default function App() {
   }, [role]);
 
   useEffect(() => {
-    const businessId = localStorage.getItem("idNegocio");
-    if (businessId && screen === "service-list") {
-      listarServicios(Number(businessId))
-        .then(setServices)
+    if (screen === "service-list" && businesses.length) {
+      Promise.all(
+        businesses.map(async business => ({
+          ...business,
+          services: await listarServicios(Number(business.idNegocio || business.id)),
+        })),
+      )
+        .then(setBusinesses)
         .catch(console.error);
     }
   }, [screen]);
@@ -43,6 +52,7 @@ export default function App() {
   function handleLogout() {
     localStorage.clear();
     setServices([]);
+    setBusinesses([]);
     setScreen("login");
   }
 
@@ -55,7 +65,12 @@ export default function App() {
     if (r === "proveedor") {
       try {
         const result = await obtenerMiNegocio();
-        const business = result.negocio;
+        const availableBusinesses = result.negocios?.length
+          ? result.negocios
+          : result.negocio
+            ? [result.negocio]
+            : [];
+        const business = availableBusinesses[0];
         const businessId = business?.idNegocio || business?.id;
         const resolvedBusinessName = business?.nombre || BUSINESS_NAME;
 
@@ -68,9 +83,16 @@ export default function App() {
         }
 
         localStorage.setItem("idNegocio", String(businessId));
-        const businessServices = await listarServicios(businessId);
+        const loadedBusinesses = await Promise.all(
+          availableBusinesses.map(async availableBusiness => ({
+            ...availableBusiness,
+            services: await listarServicios(Number(availableBusiness.idNegocio || availableBusiness.id)),
+          })),
+        );
+        setBusinesses(loadedBusinesses);
+        const businessServices = loadedBusinesses[0].services;
         setServices(businessServices);
-        setScreen(businessServices.length ? "service-list" : "service-register");
+        setScreen("service-list");
       } catch (error) {
         console.error("No fue posible cargar el negocio del proveedor:", error);
         setScreen("business-register");
@@ -97,8 +119,16 @@ export default function App() {
         <BusinessRegister
           onSuccess={(registeredBusinessName) => {
             const nextBusinessName = registeredBusinessName || BUSINESS_NAME;
+            const registeredBusinessId = Number(localStorage.getItem("idNegocio"));
             setBusinessName(nextBusinessName);
             localStorage.setItem("nombreNegocio", nextBusinessName);
+            if (registeredBusinessId > 0) {
+              setBusinesses([{
+                idNegocio: registeredBusinessId,
+                nombre: nextBusinessName,
+                services: [],
+              }]);
+            }
             setScreen("service-register");
           }}
         />
@@ -111,10 +141,13 @@ export default function App() {
       )}
       {screen === "service-list" && (
         <ServiceList
-          businessName={businessName}
-          services={services}
-          onAddService={() => setScreen("service-register")}
-          onLogout={handleLogout}
+          businesses={businesses}
+          onAddService={(businessId, name) => {
+            localStorage.setItem("idNegocio", String(businessId));
+            setBusinessName(name);
+            setServices(businesses.find(business => (business.idNegocio || business.id) === businessId)?.services || []);
+            setScreen("service-register");
+          }}
         />
       )}
       {showProviderNav && (

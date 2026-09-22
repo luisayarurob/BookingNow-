@@ -19,12 +19,20 @@ export interface Business {
     idNegocio?: number;
     id?: number;
     nombre?: string;
+    correo?: string;
+    numContacto?: string;
+    direccion?: string | null;
+    categoria?: string;
+    modalidadVirtual?: boolean;
+    fotoPrincipalBase64?: string | null;
+    fechaRegistro?: string;
     [key: string]: unknown;
 }
 
 export interface MyBusinessResponse {
     puedeRegistrar?: boolean;
     negocio?: Business | null;
+    negocios?: Business[];
 }
 
 export interface BusinessService {
