@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { CheckCircle2, ImagePlus, X, Scissors } from "lucide-react";
-import { createService } from "../services/apiSevirce";
+import { createService } from "../services/apiService";
 import { saveServiceImage } from "../services/imageStorage";
 
 interface ServiceRegisterProps {
