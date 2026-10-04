@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { iniciarSesion } from "../services/apiService";
+import { iniciarSesion } from "../services/apiService.ts";
 import { Eye, EyeOff, AlertTriangle, Lock } from "lucide-react";
 
 interface LoginProps {
@@ -12,6 +12,7 @@ export default function Login({ onGoRegister, onSuccess }: LoginProps) {
   const [pw, setPw] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState<"credentials" | "empty" | "blocked" | null>(null);
+  const [errorMessage, setErrorMessage] = useState("Correo o contraseña incorrectos.");
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -25,7 +26,7 @@ export default function Login({ onGoRegister, onSuccess }: LoginProps) {
       const data = await iniciarSesion(email, pw);
       console.log("Respuesta del backend:", data);
 
-      localStorage.setItem("token", data.token);
+      localStorage.setItem("token", data.accessToken);
       localStorage.setItem("cuenta", JSON.stringify(data.cuenta));
 
       setError(null);
@@ -37,6 +38,7 @@ export default function Login({ onGoRegister, onSuccess }: LoginProps) {
       }
     } catch (error) {
       console.error(error);
+      setErrorMessage(error instanceof Error ? error.message : "No fue posible iniciar sesión.");
       setError("credentials");
     }
   }
@@ -64,7 +66,7 @@ export default function Login({ onGoRegister, onSuccess }: LoginProps) {
           {error === "credentials" && (
             <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-5">
               <AlertTriangle className="text-red-500 shrink-0" size={16} />
-              <p className="text-sm text-red-600 font-medium">Correo o contraseña incorrectos.</p>
+              <p className="text-sm text-red-600 font-medium">{errorMessage}</p>
             </div>
           )}
           {error === "empty" && (

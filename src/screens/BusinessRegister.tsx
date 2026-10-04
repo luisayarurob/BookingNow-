@@ -1,9 +1,9 @@
 import { useState, useRef, useCallback } from "react";
 import { CheckCircle2, Upload, X, ImagePlus, Building2 } from "lucide-react";
-import { registrarNegocio } from "../services/apiService";
+import { registrarNegocio } from "../services/apiService.ts";
 
 interface BusinessRegisterProps {
-  onSuccess: () => void;
+  onSuccess: (businessName: string) => void;
 }
 
 const CATEGORIES = [
@@ -108,6 +108,16 @@ export default function BusinessRegister({ onSuccess }: BusinessRegisterProps) {
 
       console.log("Respuesta del backend:", respuesta);
 
+      const businessData = respuesta as {
+        idNegocio?: number;
+        id?: number;
+        negocio?: { idNegocio?: number; id?: number };
+      };
+      const businessId = businessData.idNegocio || businessData.id || businessData.negocio?.idNegocio || businessData.negocio?.id;
+      if (businessId) {
+        localStorage.setItem("idNegocio", String(businessId));
+      }
+
       setSuccess(true);
     } catch (error) {
       console.error("Error al registrar negocio:", error);
@@ -123,7 +133,7 @@ export default function BusinessRegister({ onSuccess }: BusinessRegisterProps) {
             <h2 className="font-display text-2xl text-[#493333] mb-2">¡Negocio creado!</h2>
             <p className="text-sm text-[#493333]/70 mb-6">Tu negocio fue registrado exitosamente. Ahora puedes agregar tus servicios.</p>
             <button
-              onClick={onSuccess}
+              onClick={() => onSuccess(name.trim())}
               className="w-full bg-[#F7769B] text-white font-semibold py-3 rounded-xl hover:bg-[#f55d87] transition-colors"
             >
               Agregar servicio
