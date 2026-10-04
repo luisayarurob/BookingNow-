@@ -1,113 +1,93 @@
-import { API_URL } from "../config/app";
-
-interface LoginResponse {
-    accessToken: string;
-    expiresIn?: number;
-    tokenType?: string;
-    cuenta?: {
-        rol?: string;
-        [key: string]: unknown;
-    };
-    [key: string]: unknown;
-}
-
-interface ApiErrorResponse {
-    detail?: string;
-}
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
 export interface Business {
-    idNegocio?: number;
-    id?: number;
-    nombre?: string;
-    correo?: string;
-    numContacto?: string;
-    direccion?: string | null;
-    categoria?: string;
-    modalidadVirtual?: boolean;
-    fotoPrincipalBase64?: string | null;
-    fechaRegistro?: string;
-    [key: string]: unknown;
-}
-
-export interface MyBusinessResponse {
-    puedeRegistrar?: boolean;
-    negocio?: Business | null;
-    negocios?: Business[];
+  id?: number | string;
+  idNegocio?: number | string;
+  nombre?: string;
+  [key: string]: any;
 }
 
 export interface BusinessService {
-    idServicio?: number;
-    id?: number;
-    nombre: string;
-    duracionMinutos: number;
-    precio: number;
-    descripcion: string;
-    imagenReferencia?: string;
-    rating?: number;
+  id?: number | string;
+  idServicio?: number | string;
+  nombre?: string;
+  duracionMinutos?: number;
+  precio?: number;
+  descripcion?: string;
+  [key: string]: any;
 }
 
-async function authorizedRequest(path: string, token = localStorage.getItem("token")) {
-    if (!token) throw new Error("No hay una sesión iniciada");
-
-    const response = await fetch(`${API_URL}${path}`, {
-        headers: { Authorization: `Bearer ${token}` },
-    });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) {
-        throw new Error(data.detail || `No fue posible consultar la información (${response.status})`);
-    }
-    return data;
+export interface ServiceRegistration {
+  nombre: string;
+  duracionMinutos: number;
+  precio: number;
+  descripcion: string;
+  imagenReferencia?: string;
 }
 
-export async function iniciarSesion(correo: string, contrasena: string): Promise<LoginResponse> {
-    const response = await fetch(`${API_URL}/api/auth/login`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            correo: correo,
-            contrasena: contrasena
-        })
-    });
-
-    const data = (await response.json().catch(() => ({}))) as LoginResponse & ApiErrorResponse;
-
-    if (!response.ok) {
-        throw new Error(data.detail || `No fue posible iniciar sesión (${response.status})`);
-    }
-
-    return data;
+interface ApiErrorResponse {
+  detail?: string;
+  campos?: Record<string, string>;
 }
 
-export async function registrarNegocio(datos: Record<string, unknown>) {
-    const token = localStorage.getItem("token");
+export class ServiceApiError extends Error {
+  status: number;
+  fields: Record<string, string>;
 
-    if (!token) {
-        throw new Error("No hay una sesión iniciada");
-    }
-
-    const response = await fetch(`${API_URL}/api/negocios`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify(datos)
-    });
-
-    if (!response.ok) {
-        const mensaje = await response.text();
-        throw new Error(mensaje || "No se pudo registrar el negocio");
-    }
-
-    return await response.json();
+  constructor(message: string, status: number, fields: Record<string, string> = {}) {
+    super(message);
+    this.name = "ServiceApiError";
+    this.status = status;
+    this.fields = fields;
+  }
 }
 
-export async function obtenerMiNegocio(token: string): Promise<MyBusinessResponse> {
-    return authorizedRequest("/api/negocios/mio", token) as Promise<MyBusinessResponse>;
+export async function createService(
+  businessId: number,
+  payload: ServiceRegistration,
+  token: string
+) {
+  const response = await fetch(`${API_URL}/api/negocios/${businessId}/servicios`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = (await response.json().catch(() => ({}))) as ApiErrorResponse;
+  if (!response.ok) {
+    throw new ServiceApiError(
+      data.detail || "No fue posible crear el servicio.",
+      response.status,
+      data.campos
+    );
+  }
+
+  return data;
 }
 
-export async function listarServicios(businessId: number, token?: string): Promise<BusinessService[]> {
-    return authorizedRequest(`/api/negocios/${businessId}/servicios`, token) as Promise<BusinessService[]>;
+export async function obtenerMiNegocio(token: string): Promise<any> {
+  const response = await fetch(`${API_URL}/api/negocios/mio`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) {
+    throw new Error("No fue posible obtener el negocio.");
+  }
+  return response.json();
+}
+
+export async function listarServicios(idNegocio: number, token: string): Promise<BusinessService[]> {
+  const response = await fetch(`${API_URL}/api/negocios/${idNegocio}/servicios`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) {
+    return [];
+  }
+  return response.json();
 }

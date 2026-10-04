@@ -1,18 +1,7 @@
 import { useState, useRef } from "react";
 import { CheckCircle2, ImagePlus, X, Scissors } from "lucide-react";
-import { createService, type ServiceRegistration } from "../services/apiSevirce";
-
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = typeof reader.result === "string" ? reader.result : "";
-      resolve(result);
-    };
-    reader.onerror = () => reject(new Error("No fue posible leer la imagen seleccionada."));
-    reader.readAsDataURL(file);
-  });
-}
+import { createService } from "../services/apiService";
+import { saveServiceImage } from "../services/imageStorage";
 
 interface ServiceRegisterProps {
   businessName: string;
@@ -54,8 +43,8 @@ export default function ServiceRegister({ businessName, onSuccess }: ServiceRegi
     if (price === "" || isNaN(pr) || pr < 0) errs.price = "El precio no puede ser negativo.";
     if (Object.keys(errs).length) { setErrors(errs); return; }
 
-    const token = localStorage.getItem("token");
-    const businessId = Number(localStorage.getItem("idNegocio"));
+    const token = sessionStorage.getItem("token");
+    const businessId = Number(sessionStorage.getItem("idNegocio"));
     if (!token) {
       setErrors({ name: "Tu sesión expiró. Inicia sesión nuevamente." });
       return;
@@ -66,18 +55,18 @@ export default function ServiceRegister({ businessName, onSuccess }: ServiceRegi
     }
 
     try {
-      const payload: ServiceRegistration = {
+      const createdService = await createService(businessId, {
         nombre: serviceName.trim(),
         duracionMinutos: Number(duration),
         precio: Number(price),
         descripcion: description.trim(),
-      };
+      }, token);
 
       if (image) {
-        payload.imagenReferencia = await fileToBase64(image);
+        const serviceData = createdService as { idServicio?: number; id?: number };
+        const imageKey = String(serviceData.idServicio || serviceData.id || `${businessId}:${serviceName.trim()}`);
+        await saveServiceImage(imageKey, image);
       }
-
-      await createService(businessId, payload, token);
 
       setErrors({});
       setSuccess(true);
