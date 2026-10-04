@@ -78,6 +78,13 @@ export default function App() {
     }
   }, [role, screen]);
 
+  function handleLogout() {
+    localStorage.clear();
+    setServices([]);
+    setBusinesses([]);
+    setScreen("login");
+  }
+
   async function handleLoginSuccess(r: Role) {
     setRole(r);
     if (r === "proveedor") {
@@ -166,7 +173,9 @@ export default function App() {
         />
       )}
 
-      {screen === "client-home" && <ClientHomeScreen />}
+      {(screen === "home" || screen === "client-home") && (
+        <ClientHomeScreen />
+      )}
 
       <DemoNav screen={screen} onNavigate={setScreen} />
     </div>
