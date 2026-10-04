@@ -3,6 +3,11 @@ export type Screen =
   | "register"
   | "business-register"
   | "service-register"
-  | "service-list";
+  | "service-list"
+  | "resource-register"
+  | "employee-register"
+  | "business-schedule"
+  | "service-assignment"
+  | "client-home";
 
 export type Role = "cliente" | "proveedor";

@@ -6,23 +6,28 @@ import Login from "./screens/Login";
 import BusinessRegister from "./screens/BusinessRegister";
 import ServiceRegister from "./screens/ServiceRegister";
 import ServiceList from "./screens/ServiceList";
+import { ClientHomeScreen } from "./screens/ClientHomeScreen";
+import { ResourceRegister as ResourceRegisterScreen } from "./screens/ResourceRegisterScreen";
+import { EmployeeRegisterScreen } from "./screens/EmployeeRegisterScreen";
+import { BusinessScheduleScreen } from "./screens/BusinessScheduleScreen";
+import { ServiceAssignmentScreen } from "./screens/ServiceAssignmentScreen";
 import type { Role, Screen } from "./types/navigation";
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>("login");
-  const [role, setRole] = useState<Role>("proveedor");
+  const [, setRole] = useState<Role>("proveedor");
 
   function handleLoginSuccess(r: Role) {
     setRole(r);
     if (r === "proveedor") {
       setScreen("business-register");
     } else {
-      setScreen("service-list");
+      setScreen("client-home");
     }
   }
 
   return (
-    <div className="size-full relative">
+    <div className="size-full relative min-h-screen">
       {screen === "login" && (
         <Login
           onGoRegister={() => setScreen("register")}
@@ -33,12 +38,30 @@ export default function App() {
         <Register onGoLogin={() => setScreen("login")} />
       )}
       {screen === "business-register" && (
-        <BusinessRegister onSuccess={() => setScreen("service-register")} />
+        <BusinessRegister onSuccess={() => setScreen("business-schedule")} />
+      )}
+      {screen === "business-schedule" && (
+        <BusinessScheduleScreen
+          businessName={BUSINESS_NAME}
+          onBack={() => setScreen("business-register")}
+        />
+      )}
+      {screen === "resource-register" && (
+        <ResourceRegisterScreen businessName={BUSINESS_NAME} />
+      )}
+      {screen === "employee-register" && (
+        <EmployeeRegisterScreen businessName={BUSINESS_NAME} />
       )}
       {screen === "service-register" && (
         <ServiceRegister
           businessName={BUSINESS_NAME}
-          onSuccess={() => setScreen("service-list")}
+          onSuccess={() => setScreen("service-assignment")}
+        />
+      )}
+      {screen === "service-assignment" && (
+        <ServiceAssignmentScreen
+          businessName={BUSINESS_NAME}
+          onSaved={() => setScreen("service-list")}
         />
       )}
       {screen === "service-list" && (
@@ -46,6 +69,9 @@ export default function App() {
           businessName={BUSINESS_NAME}
           onAddService={() => setScreen("service-register")}
         />
+      )}
+      {screen === "client-home" && (
+        <ClientHomeScreen />
       )}
 
       <DemoNav screen={screen} onNavigate={setScreen} />
