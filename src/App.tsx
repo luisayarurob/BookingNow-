@@ -153,8 +153,16 @@ export default function App() {
       )}
       {screen === "service-list" && (
         <ServiceList
-          businessName={businessName}
-          onAddService={() => setScreen("service-register")}
+          businesses={businesses}
+          onAddBusiness={() => setScreen("business-register")}
+          onAddService={(businessId: number, name: string) => {
+            localStorage.setItem("idNegocio", String(businessId));
+            setBusinessName(name);
+            setServices(
+              businesses.find((b) => (b.idNegocio || b.id) === businessId)?.services || []
+            );
+            setScreen("service-register");
+          }}
         />
       )}
 
