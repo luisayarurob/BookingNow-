@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { CheckCircle2, Upload, X, ImagePlus, Building2 } from "lucide-react";
 import { registrarNegocio } from "../services/apiService.ts";
+import type { BusinessRegistration } from "../services/apiService.ts";
 
 interface BusinessRegisterProps {
   onSuccess: (businessName: string) => void;
@@ -20,6 +21,22 @@ const CATEGORIES = [
 
 const inputBase =
   "w-full rounded-xl border px-4 py-3 text-sm outline-none transition-all placeholder-[#8D93CB] bg-white/60 focus:ring-2 focus:ring-[#F7769B]/40 focus:border-[#F7769B]";
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result !== "string") {
+        reject(new Error("No fue posible leer la imagen."));
+        return;
+      }
+      resolve(result.split(",", 2)[1] || result);
+    };
+    reader.onerror = () => reject(new Error("No fue posible leer la imagen."));
+    reader.readAsDataURL(file);
+  });
+}
 
 function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
   return (
@@ -93,15 +110,24 @@ export default function BusinessRegister({ onSuccess }: BusinessRegisterProps) {
     setErrors({});
 
     try {
-      const datos = {
+      if (!mainPhoto) {
+        return;
+      }
+
+      const datos: BusinessRegistration = {
         nombre: name,
         correo: email,
         numContacto: phone,
         direccion: address,
         categoria: category,
         modalidadVirtual: isVirtual,
-        fotoPrincipal: null,
-        galeria: []
+        fotoPrincipalBase64: await fileToBase64(mainPhoto),
+        galeria: await Promise.all(
+          gallery.map(async file => ({
+            base64: await fileToBase64(file),
+            tipo: file.type,
+          }))
+        ),
       };
 
       const respuesta = await registrarNegocio(datos);

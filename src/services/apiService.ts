@@ -25,9 +25,71 @@ export interface ServiceRegistration {
   imagenReferencia?: string;
 }
 
+export interface LoginResponse {
+  accessToken?: string;
+  token?: string;
+  cuenta?: {
+    rol?: string;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
+export interface BusinessRegistration {
+  nombre: string;
+  correo: string;
+  numContacto: string;
+  direccion: string;
+  categoria: string;
+  modalidadVirtual: boolean;
+  fotoPrincipalBase64: string;
+  galeria: Array<{
+    base64: string;
+    tipo: string;
+  }>;
+}
+
 interface ApiErrorResponse {
   detail?: string;
   campos?: Record<string, string>;
+}
+
+export async function iniciarSesion(correo: string, contrasena: string): Promise<LoginResponse> {
+  const response = await fetch(`${API_URL}/api/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ correo, contrasena }),
+  });
+
+  const data = (await response.json().catch(() => ({}))) as LoginResponse & ApiErrorResponse;
+  if (!response.ok) {
+    throw new Error(data.detail || `No fue posible iniciar sesión (${response.status}).`);
+  }
+
+  return data;
+}
+
+export async function registrarNegocio(datos: BusinessRegistration): Promise<Business> {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    throw new Error("No hay una sesión iniciada como proveedor.");
+  }
+
+  const response = await fetch(`${API_URL}/api/negocios`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(datos),
+  });
+
+  const data = (await response.json().catch(() => ({}))) as Business & ApiErrorResponse;
+  if (!response.ok) {
+    throw new Error(data.detail || `No se pudo registrar el negocio (${response.status}).`);
+  }
+
+  return data;
 }
 
 export class ServiceApiError extends Error {
