@@ -25,7 +25,9 @@ export interface BusinessWithServices extends Business {
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>(() => {
-    return (localStorage.getItem("app_screen") as Screen) || "login";
+    return localStorage.getItem("token")
+      ? (localStorage.getItem("app_screen") as Screen) || "login"
+      : "login";
   });
   const [role, setRole] = useState<Role>(() => {
     return (localStorage.getItem("app_role") as Role) || "proveedor";
@@ -98,7 +100,7 @@ export default function App() {
         setScreen(loadedBusinesses.length ? "service-list" : "business-register");
       } catch (error) {
         console.error("No fue posible cargar el negocio del proveedor:", error);
-        setScreen("business-register");
+        setScreen(localStorage.getItem("token") ? "business-register" : "login");
       }
     } else {
       setBusinessName(BUSINESS_NAME);
@@ -119,9 +121,10 @@ export default function App() {
       )}
       {screen === "business-register" && (
         <BusinessRegister
-          onSuccess={() => {
-            const storedName = localStorage.getItem("nombreNegocio") || BUSINESS_NAME;
+          onSuccess={(registeredName) => {
+            const storedName = registeredName || localStorage.getItem("nombreNegocio") || BUSINESS_NAME;
             const registeredBusinessId = Number(localStorage.getItem("idNegocio"));
+            localStorage.setItem("nombreNegocio", storedName);
             setBusinessName(storedName);
             if (registeredBusinessId > 0) {
               setBusinesses([
@@ -139,7 +142,7 @@ export default function App() {
       {screen === "business-schedule" && (
         <BusinessScheduleScreen
           businessName={businessName}
-          onBack={() => setScreen("business-register")}
+          onSaved={() => setScreen("service-list")}
         />
       )}
       {screen === "resource-register" && (
@@ -182,7 +185,7 @@ export default function App() {
       {!localStorage.getItem("token") && (
         <DemoNav screen={screen} onNavigate={setScreen} />
       )}
-      {localStorage.getItem("token") && role === "proveedor" && (
+      {localStorage.getItem("token") && role === "proveedor" && screen !== "business-schedule" && (
         <ProviderNav screen={screen} onNavigate={setScreen} onLogout={handleLogout} />
       )}
       {localStorage.getItem("token") && role === "cliente" && (

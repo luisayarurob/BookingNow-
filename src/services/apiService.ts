@@ -1,4 +1,5 @@
 import { API_URL } from "../config/app";
+import type { BusinessSchedule } from "../types/schedule";
 
 export interface Business {
   id?: number | string;
@@ -54,6 +55,13 @@ interface ApiErrorResponse {
   campos?: Record<string, string>;
 }
 
+function getApiErrorMessage(data: ApiErrorResponse, fallback: string): string {
+  const fields = data.campos
+    ? Object.entries(data.campos).map(([field, message]) => `${field}: ${message}`).join("; ")
+    : "";
+  return [data.detail || fallback, fields].filter(Boolean).join(" ");
+}
+
 export async function iniciarSesion(correo: string, contrasena: string): Promise<LoginResponse> {
   const response = await fetch(`${API_URL}/api/auth/login`, {
     method: "POST",
@@ -86,7 +94,53 @@ export async function registrarNegocio(datos: BusinessRegistration): Promise<Bus
 
   const data = (await response.json().catch(() => ({}))) as Business & ApiErrorResponse;
   if (!response.ok) {
-    throw new Error(data.detail || `No se pudo registrar el negocio (${response.status}).`);
+    if (response.status === 401) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("app_screen");
+      throw new Error("Tu sesión expiró. Inicia sesión nuevamente para registrar el negocio.");
+    }
+    throw new Error(getApiErrorMessage(data, `No se pudo registrar el negocio (${response.status}).`));
+  }
+
+  return data;
+}
+
+const API_DAY_NAMES: Record<string, string> = {
+  LUNES: "MONDAY",
+  MARTES: "TUESDAY",
+  MIERCOLES: "WEDNESDAY",
+  JUEVES: "THURSDAY",
+  VIERNES: "FRIDAY",
+  SABADO: "SATURDAY",
+  DOMINGO: "SUNDAY",
+};
+
+export async function guardarHorarios(idNegocio: number, schedule: BusinessSchedule) {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    throw new Error("No hay una sesión iniciada como proveedor.");
+  }
+
+  const horarios = Object.values(schedule)
+    .filter((day) => day.isOpen)
+    .map((day) => ({
+      dia: API_DAY_NAMES[day.day],
+      horaApertura: day.openTime,
+      horaCierre: day.closeTime,
+    }));
+
+  const response = await fetch(`${API_URL}/api/negocios/${idNegocio}/horarios`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(horarios),
+  });
+
+  const data = (await response.json().catch(() => ({}))) as ApiErrorResponse;
+  if (!response.ok) {
+    throw new Error(data.detail || `No se pudo guardar el horario (${response.status}).`);
   }
 
   return data;
@@ -137,7 +191,11 @@ export async function obtenerMiNegocio(token: string): Promise<any> {
     },
   });
   if (!response.ok) {
-    throw new Error("No fue posible obtener el negocio.");
+    if (response.status === 401) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("app_screen");
+    }
+    throw new Error(`No fue posible obtener el negocio (${response.status}).`);
   }
   return response.json();
 }

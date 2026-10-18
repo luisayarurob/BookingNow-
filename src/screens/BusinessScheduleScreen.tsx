@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { ArrowLeft, Building2, CalendarClock, Save, CheckCircle2, Clock, AlertCircle, Check } from "lucide-react";
 import { BusinessSchedule, DEFAULT_WEEK_SCHEDULE, DayOfWeek } from "../types/schedule";
+import { guardarHorarios } from "../services/apiService";
 
 interface BusinessScheduleFormProps {
   schedule: BusinessSchedule;
@@ -128,15 +129,18 @@ const BusinessScheduleForm: React.FC<BusinessScheduleFormProps> = ({
 interface BusinessScheduleScreenProps {
   businessName?: string;
   onBack?: () => void;
+  onSaved?: () => void;
 }
 
 export const BusinessScheduleScreen: React.FC<BusinessScheduleScreenProps> = ({
   businessName = "Mi Negocio",
   onBack,
+  onSaved,
 }) => {
   const [schedule, setSchedule] = useState<BusinessSchedule>(DEFAULT_WEEK_SCHEDULE);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const validateSchedule = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -164,12 +168,29 @@ export const BusinessScheduleScreen: React.FC<BusinessScheduleScreenProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSuccessMessage(null);
     if (!validateSchedule()) return;
-    setSuccessMessage("¡Horario guardado correctamente!");
-    setTimeout(() => setSuccessMessage(null), 3000);
+
+    const businessId = Number(localStorage.getItem("idNegocio"));
+    if (!businessId) {
+      setErrors({ general: "No se encontró el negocio que estás configurando." });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await guardarHorarios(businessId, schedule);
+      setSuccessMessage("¡Horario guardado correctamente!");
+      onSaved?.();
+    } catch (error) {
+      setErrors({
+        general: error instanceof Error ? error.message : "No se pudo guardar el horario.",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -215,10 +236,11 @@ export const BusinessScheduleScreen: React.FC<BusinessScheduleScreenProps> = ({
               />
               <button
                 type="submit"
+                disabled={isSaving}
                 className="w-full py-3 px-6 rounded-2xl bg-[var(--color-pompadour)] hover:opacity-90 text-white font-bold text-sm tracking-wide shadow-md cursor-pointer flex items-center justify-center gap-2"
               >
                 <Save size={18} />
-                Guardar Horario
+                {isSaving ? "Guardando..." : "Guardar Horario"}
               </button>
             </form>
           </div>
