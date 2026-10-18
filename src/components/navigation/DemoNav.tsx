@@ -10,14 +10,6 @@ export default function DemoNav({ screen, onNavigate }: DemoNavProps) {
   const screens: { id: Screen; label: string }[] = [
     { id: "login", label: "Login" },
     { id: "register", label: "Register" },
-    { id: "client-home", label: "Cliente" },
-    { id: "business-register", label: "Negocio" },
-    { id: "business-schedule", label: "Horarios" },
-    { id: "resource-register", label: "Recursos" },
-    { id: "employee-register", label: "Empleados" },
-    { id: "service-register", label: "Reg. Servicio" },
-    { id: "service-assignment", label: "Asignaciones" },
-    { id: "service-list", label: "List. Servicios" },
   ];
 
   return (

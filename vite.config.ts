@@ -40,6 +40,11 @@ export default defineConfig(({ mode }) => {
         '/api': {
           target: 'http://3.136.161.165:8080',
           changeOrigin: true,
+          configure: (proxy) => {
+            proxy.on('proxyReq', (proxyReq) => {
+              proxyReq.removeHeader('origin')
+            })
+          },
         },
       },
       watch: { ignored: ['**/.figma/**'] },

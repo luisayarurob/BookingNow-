@@ -1,4 +1,4 @@
-import { List, LogOut, Menu, Scissors, X } from "lucide-react";
+import { ClipboardCheck, List, LogOut, Menu, Package, Scissors, Users, X } from "lucide-react";
 import { useState } from "react";
 import type { Screen } from "../../types/navigation";
 
@@ -65,6 +65,42 @@ export default function ProviderNav({ screen, onNavigate, onLogout }: ProviderNa
           >
             <List size={18} />
             Listar servicios
+          </button>
+          <button
+            type="button"
+            onClick={() => navigateTo("employee-register")}
+            className={`flex items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold transition-colors ${
+              screen === "employee-register"
+                ? "bg-[#FFDDED] text-[#F7769B]"
+                : "text-[#493333]/75 hover:bg-[#FFDDED] hover:text-[#F7769B]"
+            }`}
+          >
+            <Users size={18} />
+            Registrar empleados
+          </button>
+          <button
+            type="button"
+            onClick={() => navigateTo("resource-register")}
+            className={`flex items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold transition-colors ${
+              screen === "resource-register"
+                ? "bg-[#FFDDED] text-[#F7769B]"
+                : "text-[#493333]/75 hover:bg-[#FFDDED] hover:text-[#F7769B]"
+            }`}
+          >
+            <Package size={18} />
+            Registrar recursos
+          </button>
+          <button
+            type="button"
+            onClick={() => navigateTo("service-assignment")}
+            className={`flex items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold transition-colors ${
+              screen === "service-assignment"
+                ? "bg-[#FFDDED] text-[#F7769B]"
+                : "text-[#493333]/75 hover:bg-[#FFDDED] hover:text-[#F7769B]"
+            }`}
+          >
+            <ClipboardCheck size={18} />
+            Asignar servicios
           </button>
         </nav>
 

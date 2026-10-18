@@ -6,6 +6,8 @@ import BusinessRegister from "./screens/BusinessRegister";
 import ServiceRegister from "./screens/ServiceRegister";
 import ServiceList from "./screens/ServiceList";
 import DemoNav from "./components/navigation/DemoNav";
+import ProviderNav from "./components/navigation/ProviderNav";
+import ClientNav from "./components/navigation/ClientNav";
 
 import { ClientHomeScreen } from "./screens/ClientHomeScreen";
 import { ResourceRegister as ResourceRegisterScreen } from "./screens/ResourceRegisterScreen";
@@ -177,7 +179,15 @@ export default function App() {
         <ClientHomeScreen />
       )}
 
-      <DemoNav screen={screen} onNavigate={setScreen} />
+      {!localStorage.getItem("token") && (
+        <DemoNav screen={screen} onNavigate={setScreen} />
+      )}
+      {localStorage.getItem("token") && role === "proveedor" && (
+        <ProviderNav screen={screen} onNavigate={setScreen} onLogout={handleLogout} />
+      )}
+      {localStorage.getItem("token") && role === "cliente" && (
+        <ClientNav onLogout={handleLogout} />
+      )}
     </div>
   );
 }
