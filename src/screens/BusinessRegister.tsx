@@ -31,7 +31,7 @@ function fileToBase64(file: File): Promise<string> {
         reject(new Error("No fue posible leer la imagen."));
         return;
       }
-      resolve(result.split(",", 2)[1] || result);
+      resolve(result);
     };
     reader.onerror = () => reject(new Error("No fue posible leer la imagen."));
     reader.readAsDataURL(file);
@@ -147,6 +147,9 @@ export default function BusinessRegister({ onSuccess }: BusinessRegisterProps) {
       setSuccess(true);
     } catch (error) {
       console.error("Error al registrar negocio:", error);
+      setErrors({
+        general: error instanceof Error ? error.message : "No se pudo registrar el negocio.",
+      });
     }
   }
 
@@ -157,12 +160,12 @@ export default function BusinessRegister({ onSuccess }: BusinessRegisterProps) {
           <div className="bg-[#FCF6EF] rounded-3xl p-10 max-w-sm w-full text-center shadow-2xl border border-[#E6C1C6]">
             <CheckCircle2 className="mx-auto mb-4 text-[#F7769B]" size={56} strokeWidth={1.5} />
             <h2 className="font-display text-2xl text-[#493333] mb-2">¡Negocio creado!</h2>
-            <p className="text-sm text-[#493333]/70 mb-6">Tu negocio fue registrado exitosamente. Ahora puedes agregar tus servicios.</p>
+            <p className="text-sm text-[#493333]/70 mb-6">Tu negocio fue registrado exitosamente. Ahora configura su horario de atención.</p>
             <button
               onClick={() => onSuccess(name.trim())}
               className="w-full bg-[#F7769B] text-white font-semibold py-3 rounded-xl hover:bg-[#f55d87] transition-colors"
             >
-              Agregar servicio
+              Configurar horario
             </button>
           </div>
         </div>
@@ -178,6 +181,11 @@ export default function BusinessRegister({ onSuccess }: BusinessRegisterProps) {
         </div>
 
         <div className="bg-[#FCF6EF] rounded-3xl shadow-xl border border-[#E6C1C6] p-8">
+          {errors.general && (
+            <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-600">
+              {errors.general}
+            </div>
+          )}
           <form onSubmit={submit} className="flex flex-col gap-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Field label="Nombre del negocio" error={errors.name}>
