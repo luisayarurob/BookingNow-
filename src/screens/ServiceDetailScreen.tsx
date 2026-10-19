@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   Clock, 
   Tag, 
@@ -13,11 +13,47 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { ServiceDetail } from '../types/serviceDetail';
+import { obtenerServicio, type BusinessService } from '../services/apiService';
 
 interface ServiceDetailScreenProps {
   service?: ServiceDetail;
+  serviceId?: string;
   onBack?: () => void;
   onStartBooking?: (serviceId: string) => void;
+}
+
+function toImageSource(value: string): string {
+  if (value.startsWith('data:') || value.startsWith('http://') || value.startsWith('https://') || value.startsWith('blob:')) {
+    return value;
+  }
+
+  return `data:image/jpeg;base64,${value}`;
+}
+
+function mapServiceDetail(service: BusinessService): ServiceDetail {
+  const businessId = String(service.idNegocio ?? '');
+  const category = service.tipoServicio || service.categoriaNegocio || 'Servicio';
+  const imageValues = [service.imagenReferenciaBase64, ...(service.imagenesBase64 || [])].filter(
+    (image): image is string => Boolean(image),
+  );
+
+  return {
+    id: String(service.idServicio ?? service.id ?? ''),
+    businessId,
+    name: service.nombre || 'Servicio sin nombre',
+    category,
+    durationMinutes: service.duracionMinutos || 0,
+    price: service.precio || 0,
+    description: service.descripcion || 'Sin descripción disponible.',
+    images: Array.from(new Set(imageValues.map(toImageSource))),
+    business: {
+      id: businessId,
+      name: service.nombreNegocio || `Negocio #${businessId || 'sin identificar'}`,
+      category: service.categoriaNegocio || category,
+      address: service.direccion,
+      city: service.ciudad,
+    },
+  };
 }
 
 // Datos de prueba por defecto alineados a los Criterios de Aceptación
@@ -46,12 +82,51 @@ const MOCK_SERVICE: ServiceDetail = {
 };
 
 export const ServiceDetailScreen: React.FC<ServiceDetailScreenProps> = ({
-  service = MOCK_SERVICE,
+  service: servicePreview,
+  serviceId,
   onBack,
   onStartBooking
 }) => {
+  const [loadedService, setLoadedService] = useState<ServiceDetail | null>(null);
+  const [isLoading, setIsLoading] = useState(Boolean(serviceId));
+  const [loadError, setLoadError] = useState<string | null>(null);
+
   // Estado para el control del carrusel de imágenes
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  useEffect(() => {
+    setCurrentImageIndex(0);
+
+    if (!serviceId) {
+      setLoadedService(null);
+      setIsLoading(false);
+      setLoadError(null);
+      return;
+    }
+
+    let isCurrentRequest = true;
+    setIsLoading(true);
+    setLoadError(null);
+
+    obtenerServicio(serviceId)
+      .then((data) => {
+        if (isCurrentRequest) setLoadedService(mapServiceDetail(data));
+      })
+      .catch((requestError: unknown) => {
+        if (isCurrentRequest) {
+          setLoadError(requestError instanceof Error ? requestError.message : 'No fue posible cargar el servicio.');
+        }
+      })
+      .finally(() => {
+        if (isCurrentRequest) setIsLoading(false);
+      });
+
+    return () => {
+      isCurrentRequest = false;
+    };
+  }, [serviceId]);
+
+  const service = loadedService || servicePreview || MOCK_SERVICE;
 
   const images = service.images && service.images.length > 0 
     ? service.images 
@@ -99,6 +174,15 @@ export const ServiceDetailScreen: React.FC<ServiceDetailScreenProps> = ({
             <span>{service.category}</span>
           </div>
         </div>
+
+        {isLoading && (
+          <p className="text-xs text-[var(--color-cacao)]/70">Cargando información completa del servicio...</p>
+        )}
+        {loadError && (
+          <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
+            {loadError}
+          </p>
+        )}
 
         {/* Ficha principal del servicio */}
         <div className="bg-[var(--color-cream)] border border-[var(--color-dusty-rose)] rounded-3xl overflow-hidden shadow-sm">

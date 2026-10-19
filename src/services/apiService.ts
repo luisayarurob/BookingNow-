@@ -12,7 +12,10 @@ export interface Business {
 export interface BusinessService {
   id?: number | string;
   idServicio?: number | string;
+  idNegocio?: number | string;
   nombre?: string;
+  nombreNegocio?: string;
+  categoriaNegocio?: string;
   duracionMinutos?: number;
   precio?: number;
   descripcion?: string;
@@ -246,6 +249,19 @@ export async function buscarServicios(params: {
 
   if (!response.ok) {
     throw new Error(data.detail || `No fue posible listar los servicios (${response.status}).`);
+  }
+
+  return data;
+}
+
+export async function obtenerServicio(idServicio: string | number): Promise<BusinessService> {
+  const response = await fetch(`${API_URL}/api/servicios/${encodeURIComponent(String(idServicio))}`, {
+    headers: { Accept: "application/json" },
+  });
+  const data = (await response.json().catch(() => ({}))) as BusinessService & ApiErrorResponse;
+
+  if (!response.ok) {
+    throw new Error(data.detail || `No fue posible obtener el servicio (${response.status}).`);
   }
 
   return data;
