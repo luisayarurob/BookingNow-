@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   Search, 
   Tag, 
@@ -9,120 +9,84 @@ import {
   SlidersHorizontal,
   X,
   Frown,
-  ArrowRight
+  ArrowRight,
+  LoaderCircle
 } from 'lucide-react';
 import { ServiceDetail } from '../types/serviceDetail';
+import { buscarServicios, type BusinessService } from '../services/apiService';
+import { CATEGORIAS_SERVICIO } from '../config/categorias';
 
 interface ServiceSearchScreenProps {
   onSelectService?: (service: ServiceDetail) => void;
 }
 
-// Catálogo de prueba para búsqueda y paginación
-const MOCK_SERVICES_CATALOG: ServiceDetail[] = [
-  {
-    id: 'srv-001',
-    businessId: 'biz-001',
-    name: 'Masaje Relajante con Aceites Esenciales',
-    category: 'Spa y Bienestar',
-    durationMinutes: 60,
-    price: 85000,
-    description: 'Terapia corporal completa con aromaterapia para liberar tensión muscular acumulada.',
-    images: ['https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&w=600&q=80'],
-    business: { id: 'biz-001', name: 'Spa Serenity', category: 'Bienestar', rating: 4.9, city: 'El Carmen de Viboral' }
-  },
-  {
-    id: 'srv-002',
-    businessId: 'biz-002',
-    name: 'Corte de Cabello Clásico y Peinado',
-    category: 'Peluquería',
-    durationMinutes: 40,
-    price: 35000,
-    description: 'Corte estilizado adaptado a la forma del rostro con productos de acabado profesional.',
-    images: ['https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=600&q=80'],
-    business: { id: 'biz-002', name: 'Barbería Moderna', category: 'Barbería', rating: 4.8, city: 'Marinilla' }
-  },
-  {
-    id: 'srv-003',
-    businessId: 'biz-001',
-    name: 'Masaje Descontracturante Profundo',
-    category: 'Spa y Bienestar',
-    durationMinutes: 50,
-    price: 95000,
-    description: 'Enfocado en espalda, cuello y hombros para contracturas severas.',
-    images: ['https://images.unsplash.com/photo-1519823551278-64ac92734fb1?auto=format&fit=crop&w=600&q=80'],
-    business: { id: 'biz-001', name: 'Spa Serenity', category: 'Bienestar', rating: 4.9, city: 'El Carmen de Viboral' }
-  },
-  {
-    id: 'srv-004',
-    businessId: 'biz-003',
-    name: 'Limpieza Facial Profunda con Hidratación',
-    category: 'Cuidado Facial',
-    durationMinutes: 75,
-    price: 110000,
-    description: 'Extracción de impurezas, vapor de ozono, mascarilla de arcilla y velo de colágeno.',
-    images: ['https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=600&q=80'],
-    business: { id: 'biz-003', name: 'Estética Piel de Seda', category: 'Estética', rating: 4.7, city: 'Rionegro' }
-  },
-  {
-    id: 'srv-005',
-    businessId: 'biz-002',
-    name: 'Perfilado de Barba con Toalla Caliente',
-    category: 'Peluquería',
-    durationMinutes: 30,
-    price: 25000,
-    description: 'Delineado preciso con navaja tradicional, tratamiento térmico y loción calmante.',
-    images: ['https://images.unsplash.com/photo-1621605815971-fbc98d665033?auto=format&fit=crop&w=600&q=80'],
-    business: { id: 'biz-002', name: 'Barbería Moderna', category: 'Barbería', rating: 4.8, city: 'Marinilla' }
-  },
-  {
-    id: 'srv-006',
-    businessId: 'biz-004',
-    name: 'Clase Personalizada de Entrenamiento Funcional',
-    category: 'Fitness',
-    durationMinutes: 60,
-    price: 40000,
-    description: 'Sesión uno a uno adaptada a objetivos de fuerza, movilidad y resistencia cardiovascular.',
-    images: ['https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=600&q=80'],
-    business: { id: 'biz-004', name: 'Studio Movimiento Activo', category: 'Fitness', rating: 5.0, city: 'El Carmen de Viboral' }
-  },
-  {
-    id: 'srv-007',
-    businessId: 'biz-003',
-    name: 'Microdermoabrasión Punta de Diamante',
-    category: 'Cuidado Facial',
-    durationMinutes: 45,
-    price: 130000,
-    description: 'Exfoliación mecánica que atenúa manchas superficiales y promueve regeneración celular.',
-    images: ['https://images.unsplash.com/photo-1512290900672-1f5be57d5918?auto=format&fit=crop&w=600&q=80'],
-    business: { id: 'biz-003', name: 'Estética Piel de Seda', category: 'Estética', rating: 4.7, city: 'Rionegro' }
-  }
-];
+const ITEMS_PER_PAGE = 20;
 
-const CATEGORIES = ['TODAS', 'Spa y Bienestar', 'Peluquería', 'Cuidado Facial', 'Fitness'];
-const ITEMS_PER_PAGE = 4;
+function mapService(service: BusinessService): ServiceDetail {
+  const businessId = String(service.idNegocio ?? '');
+  const id = String(service.idServicio ?? service.id ?? '');
+  const category = service.tipoServicio || 'Servicio';
+
+  return {
+    id,
+    businessId,
+    name: service.nombre || 'Servicio sin nombre',
+    category,
+    durationMinutes: service.duracionMinutos || 0,
+    price: service.precio || 0,
+    description: service.descripcion || 'Sin descripción disponible.',
+    images: [],
+    business: {
+      id: businessId,
+      name: `Negocio #${businessId || 'sin identificar'}`,
+      category,
+    },
+  };
+}
 
 export const ServiceSearchScreen: React.FC<ServiceSearchScreenProps> = ({ onSelectService }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('TODAS');
   const [currentPage, setCurrentPage] = useState(1);
+  const [services, setServices] = useState<ServiceDetail[]>([]);
+  const [totalElements, setTotalElements] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
-  // Normalizador para ignorar tildes y mayúsculas
-  const normalize = (text: string) =>
-    text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  useEffect(() => {
+    let isCurrentRequest = true;
 
-  // Filtrado reactivo combinado: Nombre Y Tipo
-  const filteredServices = useMemo(() => {
-    return MOCK_SERVICES_CATALOG.filter((srv) => {
-      const matchesName = normalize(srv.name).includes(normalize(searchTerm.trim()));
-      const matchesCategory = selectedCategory === 'TODAS' || srv.category === selectedCategory;
-      return matchesName && matchesCategory;
-    });
-  }, [searchTerm, selectedCategory]);
+    setIsLoading(true);
+    setError(null);
+    buscarServicios({
+      nombre: searchTerm,
+      tipo: selectedCategory === 'TODAS' ? undefined : selectedCategory,
+      pagina: currentPage - 1,
+      tamano: ITEMS_PER_PAGE,
+    })
+      .then((page) => {
+        if (!isCurrentRequest) return;
+        setServices((page.contenido || []).map(mapService));
+        setTotalElements(page.totalElementos);
+        setTotalPages(Math.max(page.totalPaginas, 1));
+      })
+      .catch((requestError: unknown) => {
+        if (!isCurrentRequest) return;
+        setServices([]);
+        setTotalElements(0);
+        setTotalPages(1);
+        setError(requestError instanceof Error ? requestError.message : 'No fue posible cargar los servicios.');
+      })
+      .finally(() => {
+        if (isCurrentRequest) setIsLoading(false);
+      });
 
-  // Cálculos de Paginación
-  const totalPages = Math.ceil(filteredServices.length / ITEMS_PER_PAGE) || 1;
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedServices = filteredServices.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+    return () => {
+      isCurrentRequest = false;
+    };
+  }, [searchTerm, selectedCategory, currentPage, retryCount]);
 
   const handleSearchChange = (val: string) => {
     setSearchTerm(val);
@@ -154,8 +118,36 @@ export const ServiceSearchScreen: React.FC<ServiceSearchScreenProps> = ({ onSele
           </p>
         </div>
 
-        {/* Contenedor de Búsqueda y Filtros */}
-        <div className="bg-[var(--color-cream)] border border-[var(--color-dusty-rose)] rounded-3xl p-5 md:p-6 shadow-xs space-y-4">
+        <div className="flex flex-col md:flex-row items-start gap-6">
+          {/* Menú lateral de categorías */}
+          <aside className="w-full md:w-56 shrink-0 bg-[var(--color-cream)] border border-[var(--color-dusty-rose)] rounded-3xl p-4 shadow-xs">
+            <div className="flex flex-col items-stretch gap-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-cacao)]/60 mb-1">
+                Categoría:
+              </span>
+              {['TODAS', ...CATEGORIAS_SERVICIO].map((cat) => {
+                const isActive = selectedCategory === cat;
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => handleCategoryChange(cat)}
+                    className={`px-3.5 py-2 rounded-xl text-xs font-semibold text-left transition-all cursor-pointer ${
+                      isActive
+                        ? 'bg-[var(--color-pompadour)] text-white shadow-2xs'
+                        : 'bg-white text-[var(--color-cacao)]/80 border border-[var(--color-dusty-rose)] hover:bg-[var(--color-mimi-pink)]/30'
+                    }`}
+                  >
+                    {cat === 'TODAS' ? 'Todas las categorías' : cat}
+                  </button>
+                );
+              })}
+            </div>
+          </aside>
+
+          <main className="min-w-0 flex-1 w-full space-y-6">
+            {/* Contenedor de búsqueda */}
+            <div className="bg-[var(--color-cream)] border border-[var(--color-dusty-rose)] rounded-3xl p-5 md:p-6 shadow-xs">
           
           <div className="flex flex-col md:flex-row gap-3">
             {/* Input de Búsqueda por Nombre */}
@@ -182,37 +174,27 @@ export const ServiceSearchScreen: React.FC<ServiceSearchScreenProps> = ({ onSele
             {/* Contador de resultados */}
             <div className="flex items-center justify-between md:justify-end gap-2 px-3 py-2 text-xs font-semibold text-[var(--color-cacao)]/80">
               <SlidersHorizontal size={14} className="text-[var(--color-pompadour)]" />
-              <span>{filteredServices.length} {filteredServices.length === 1 ? 'servicio encontrado' : 'servicios encontrados'}</span>
+              <span>{totalElements} {totalElements === 1 ? 'servicio encontrado' : 'servicios encontrados'}</span>
             </div>
           </div>
 
-          {/* Chips de Categorías (Búsqueda por tipo) */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-            <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-cacao)]/60 shrink-0 mr-1">
-              Categoría:
-            </span>
-            {CATEGORIES.map((cat) => {
-              const isActive = selectedCategory === cat;
-              return (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => handleCategoryChange(cat)}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-                    isActive
-                      ? 'bg-[var(--color-pompadour)] text-white shadow-2xs scale-[1.02]'
-                      : 'bg-white text-[var(--color-cacao)]/80 border border-[var(--color-dusty-rose)] hover:bg-[var(--color-mimi-pink)]/30'
-                  }`}
-                >
-                  {cat === 'TODAS' ? 'Todas las categorías' : cat}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+            </div>
 
         {/* Estado: Sin Resultados */}
-        {filteredServices.length === 0 ? (
+        {isLoading ? (
+          <div className="bg-[var(--color-cream)] border border-[var(--color-dusty-rose)] rounded-3xl p-12 text-center text-[var(--color-pompadour)]">
+            <LoaderCircle size={30} className="mx-auto animate-spin" />
+            <p className="text-sm text-[var(--color-cacao)]/70 mt-3">Cargando servicios...</p>
+          </div>
+        ) : error ? (
+          <div className="bg-[var(--color-cream)] border border-dashed border-[var(--color-dusty-rose)] rounded-3xl p-12 text-center space-y-4">
+            <h3 className="font-bold text-lg font-['Fraunces',serif] text-[var(--color-cacao)]">No fue posible cargar los servicios</h3>
+            <p className="text-xs text-[var(--color-cacao)]/70">{error}</p>
+            <button type="button" onClick={() => setRetryCount((count) => count + 1)} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--color-pompadour)] text-white text-xs font-bold cursor-pointer hover:opacity-90 transition-all shadow-xs">
+              Reintentar
+            </button>
+          </div>
+        ) : services.length === 0 ? (
           <div className="bg-[var(--color-cream)] border border-dashed border-[var(--color-dusty-rose)] rounded-3xl p-12 text-center space-y-4">
             <div className="w-14 h-14 rounded-full bg-[var(--color-mimi-pink)]/60 flex items-center justify-center mx-auto text-[var(--color-pompadour)]">
               <Frown size={28} />
@@ -237,7 +219,7 @@ export const ServiceSearchScreen: React.FC<ServiceSearchScreenProps> = ({ onSele
           /* Grid de Resultados */
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {paginatedServices.map((service) => (
+              {services.map((service) => (
                 <div
                   key={service.id}
                   onClick={() => onSelectService && onSelectService(service)}
@@ -246,11 +228,17 @@ export const ServiceSearchScreen: React.FC<ServiceSearchScreenProps> = ({ onSele
                   <div className="space-y-3.5">
                     {/* Imagen y badges */}
                     <div className="relative w-full h-44 rounded-2xl overflow-hidden bg-stone-100">
-                      <img
-                        src={service.images[0]}
-                        alt={service.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
+                      {service.images[0] ? (
+                        <img
+                          src={service.images[0]}
+                          alt={service.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-[var(--color-pompadour)]">
+                          <Tag size={42} strokeWidth={1.5} />
+                        </div>
+                      )}
                       <span className="absolute top-3 left-3 px-3 py-1 rounded-full text-[10px] font-bold bg-white/90 text-[var(--color-cacao)] backdrop-blur-xs shadow-2xs uppercase tracking-wider">
                         {service.category}
                       </span>
@@ -324,6 +312,8 @@ export const ServiceSearchScreen: React.FC<ServiceSearchScreenProps> = ({ onSele
             )}
           </div>
         )}
+          </main>
+        </div>
 
       </div>
     </div>

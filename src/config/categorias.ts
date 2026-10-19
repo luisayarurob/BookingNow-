@@ -24,13 +24,17 @@ export const CATEGORIAS_SERVICIO_POR_NEGOCIO: Record<string, string[]> = {
   "Clases de música y arte": ["Clase de música", "Clase de dibujo", "Clase de pintura", "Taller artístico"],
 };
 
-const CATEGORIAS_SERVICIO_GENERALES = [
+export const CATEGORIAS_SERVICIO_GENERALES = [
   "Consulta",
   "Sesión personalizada",
   "Servicio a domicilio",
   "Servicio básico",
   "Servicio premium",
 ];
+
+export const CATEGORIAS_SERVICIO = Array.from(
+  new Set([...Object.values(CATEGORIAS_SERVICIO_POR_NEGOCIO).flat(), ...CATEGORIAS_SERVICIO_GENERALES]),
+);
 
 export function obtenerCategoriasDeServicio(categoriaNegocio?: string): string[] {
   return CATEGORIAS_SERVICIO_POR_NEGOCIO[categoriaNegocio || ""] || CATEGORIAS_SERVICIO_GENERALES;
