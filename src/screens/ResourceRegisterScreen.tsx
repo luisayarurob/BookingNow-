@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Package, 
   PlusCircle, 
@@ -6,141 +6,128 @@ import {
   AlertCircle, 
   Boxes, 
   Layers, 
-  Clock,
-  Loader2
+  Activity, 
+  FileText,
+  Clock
 } from 'lucide-react';
-import { registrarRecurso, listarRecursos, Recurso, ServiceApiError } from '../services/apiService';
+import { Resource, ResourceFormData, ResourceStatus, ResourceType } from '../types/resource';
 
 interface ResourceRegisterProps {
+  businessId?: string;
   businessName?: string;
-  onResourceCreated?: (newResource: Recurso) => void;
+  onResourceCreated?: (newResource: Resource) => void;
 }
 
 export const ResourceRegister: React.FC<ResourceRegisterProps> = ({
+  businessId = 'biz-001',
   businessName = 'Mi Negocio Principal',
   onResourceCreated
 }) => {
-  const [nombre, setNombre] = useState('');
-  const [cantidad, setCantidad] = useState<number | string>(1);
-  const [estado, setEstado] = useState('DISPONIBLE');
-  const [descripcion, setDescripcion] = useState('');
+  // Estado del formulario
+  const [formData, setFormData] = useState<ResourceFormData>({
+    name: '',
+    type: 'EQUIPO',
+    quantity: 1,
+    status: 'DISPONIBLE',
+    description: ''
+  });
 
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [serverError, setServerError] = useState<string | null>(null);
+  // Errores de validación
+  const [errors, setErrors] = useState<Partial<Record<keyof ResourceFormData, string>>>({});
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [fetchingList, setFetchingList] = useState(false);
 
-  const [resourcesList, setResourcesList] = useState<Recurso[]>([]);
-
-  // 1. Cargar recursos reales del backend
-  const cargarRecursos = async () => {
-    const token = localStorage.getItem('token');
-    const businessId = Number(localStorage.getItem('idNegocio'));
-
-    if (!token || !businessId) return;
-
-    try {
-      setFetchingList(true);
-      const data = await listarRecursos(businessId, token);
-      setResourcesList(data);
-    } catch (err) {
-      console.error('Error al listar recursos:', err);
-    } finally {
-      setFetchingList(false);
+  // Lista local para visualización inmediata (mockeada/estado local)
+  const [resourcesList, setResourcesList] = useState<Resource[]>([
+    {
+      id: 'res-1',
+      businessId,
+      name: 'Camilla Masajes Ergonómica',
+      type: 'MOBILIARIO',
+      quantity: 2,
+      status: 'DISPONIBLE',
+      description: 'Camilla hidráulica para cabina 1',
+      createdAt: '2026-10-04'
     }
-  };
+  ]);
 
-  useEffect(() => {
-    cargarRecursos();
-  }, []);
-
-  // 2. Validaciones locales de formulario
+  // Validaciones según Criterios de Aceptación
   const validate = (): boolean => {
-    const newErrors: Record<string, string> = {};
+    const newErrors: Partial<Record<keyof ResourceFormData, string>> = {};
 
-    if (!nombre.trim()) {
-      newErrors.nombre = 'El nombre del recurso es obligatorio.';
-    } else if (nombre.trim().length < 3) {
-      newErrors.nombre = 'El nombre debe tener al menos 3 caracteres.';
+    if (!formData.name.trim()) {
+      newErrors.name = 'El nombre del recurso es obligatorio.';
+    } else if (formData.name.trim().length < 3) {
+      newErrors.name = 'El nombre debe tener al menos 3 caracteres.';
     }
 
-    const qty = Number(cantidad);
-    if (cantidad === '' || isNaN(qty)) {
-      newErrors.cantidad = 'Ingresa una cantidad válida.';
-    } else if (qty <= 0) {
-      newErrors.cantidad = 'La cantidad debe ser mayor a 0 (no se permiten números negativos ni cero).';
+    if (!formData.type) {
+      newErrors.type = 'Selecciona el tipo de recurso.';
     }
 
-    if (!estado) {
-      newErrors.estado = 'Selecciona el estado actual del recurso.';
+    if (formData.quantity === '' || isNaN(Number(formData.quantity))) {
+      newErrors.quantity = 'Ingresa una cantidad válida.';
+    } else if (Number(formData.quantity) <= 0) {
+      newErrors.quantity = 'La cantidad debe ser mayor a 0 (no se permiten números negativos ni cero).';
     }
 
-    if (!descripcion.trim()) {
-      newErrors.descripcion = 'La descripción es obligatoria.';
+    if (!formData.status) {
+      newErrors.status = 'Selecciona el estado actual del recurso.';
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // 3. Enviar al backend
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSuccessMessage(null);
-    setServerError(null);
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: name === 'quantity' ? (value === '' ? '' : Number(value)) : value
+    }));
 
-    if (!validate()) return;
-
-    const token = localStorage.getItem('token');
-    const businessId = Number(localStorage.getItem('idNegocio'));
-
-    if (!token) {
-      setServerError('Tu sesión ha expirado o no estás autenticado.');
-      return;
-    }
-
-    if (!businessId || isNaN(businessId)) {
-      setServerError('No se encontró el identificador del negocio.');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const nuevo = await registrarRecurso(
-        businessId,
-        {
-          nombre: nombre.trim(),
-          cantidad: Number(cantidad),
-          estado,
-          descripcion: descripcion.trim(),
-        },
-        token
-      );
-
-      setSuccessMessage(`¡Recurso "${nombre.trim()}" registrado exitosamente!`);
-      if (onResourceCreated) onResourceCreated(nuevo as Recurso);
-
-      setNombre('');
-      setCantidad(1);
-      setEstado('DISPONIBLE');
-      setDescripcion('');
-      setErrors({});
-
-      await cargarRecursos();
-      setTimeout(() => setSuccessMessage(null), 4000);
-    } catch (err: any) {
-      if (err instanceof ServiceApiError && err.fields) {
-        setErrors(err.fields);
-      } else {
-        setServerError(err.message || 'Error al conectar con el servidor.');
-      }
-    } finally {
-      setLoading(false);
+    // Limpia error al tipear
+    if (errors[name as keyof ResourceFormData]) {
+      setErrors(prev => ({ ...prev, [name]: undefined }));
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSuccessMessage(null);
+
+    if (!validate()) return;
+
+    const newResource: Resource = {
+      id: `res-${Date.now()}`,
+      businessId,
+      name: formData.name.trim(),
+      type: formData.type,
+      quantity: Number(formData.quantity),
+      status: formData.status,
+      description: formData.description.trim(),
+      createdAt: new Date().toISOString().split('T')[0]
+    };
+
+    // Actualiza lista en Front-End y notifica padre
+    setResourcesList(prev => [newResource, ...prev]);
+    if (onResourceCreated) onResourceCreated(newResource);
+
+    // Feedback y reset
+    setSuccessMessage(`¡Recurso "${newResource.name}" registrado exitosamente!`);
+    setFormData({
+      name: '',
+      type: 'EQUIPO',
+      quantity: 1,
+      status: 'DISPONIBLE',
+      description: ''
+    });
+
+    setTimeout(() => setSuccessMessage(null), 4000);
+  };
+
+  const getStatusBadge = (status: ResourceStatus) => {
     switch (status) {
       case 'DISPONIBLE':
         return (
@@ -157,7 +144,6 @@ export const ResourceRegister: React.FC<ResourceRegisterProps> = ({
           </span>
         );
       case 'NO_DISPONIBLE':
-      default:
         return (
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 border border-rose-300">
             <span className="w-2 h-2 rounded-full bg-rose-500" />
@@ -187,17 +173,9 @@ export const ResourceRegister: React.FC<ResourceRegisterProps> = ({
           </div>
         </div>
 
-        {/* Alerta de error backend */}
-        {serverError && (
-          <div className="flex items-center gap-3 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 text-sm shadow-sm">
-            <AlertCircle size={20} className="text-rose-600 shrink-0" />
-            <p className="font-medium">{serverError}</p>
-          </div>
-        )}
-
-        {/* Mensaje de éxito */}
+        {/* Mensaje de éxito global */}
         {successMessage && (
-          <div className="flex items-center gap-3 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-sm shadow-sm">
+          <div className="flex items-center gap-3 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-sm shadow-sm animate-in fade-in slide-in-from-top-2">
             <CheckCircle2 size={20} className="text-emerald-600 shrink-0" />
             <p className="font-medium">{successMessage}</p>
           </div>
@@ -224,74 +202,97 @@ export const ResourceRegister: React.FC<ResourceRegisterProps> = ({
                 <label className="block text-xs font-bold uppercase tracking-wider mb-1.5 text-[var(--color-cacao)]">
                   Nombre del recurso <span className="text-[var(--color-pompadour)]">*</span>
                 </label>
-                <input
-                  type="text"
-                  value={nombre}
-                  onChange={(e) => {
-                    setNombre(e.target.value);
-                    if (errors.nombre) setErrors((prev) => ({ ...prev, nombre: '' }));
-                  }}
-                  placeholder="Ej. Camilla ergonómica, Silla de corte..."
-                  className={`w-full px-4 py-2.5 rounded-xl bg-white border text-sm transition-all focus:outline-none focus:ring-2 ${
-                    errors.nombre 
-                      ? 'border-rose-400 focus:ring-rose-200' 
-                      : 'border-[var(--color-dusty-rose)] focus:border-[var(--color-pompadour)] focus:ring-[var(--color-pompadour)]/20'
-                  }`}
-                />
-                {errors.nombre && (
+                <div className="relative">
+                  <input
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    placeholder="Ej. Silla de corte ergonómica, Camilla #2"
+                    className={`w-full px-4 py-2.5 rounded-xl bg-white border text-sm transition-all focus:outline-none focus:ring-2 ${
+                      errors.name 
+                        ? 'border-rose-400 focus:ring-rose-200' 
+                        : 'border-[var(--color-dusty-rose)] focus:border-[var(--color-pompadour)] focus:ring-[var(--color-pompadour)]/20'
+                    }`}
+                  />
+                </div>
+                {errors.name && (
                   <p className="flex items-center gap-1 text-xs text-rose-600 mt-1.5 font-medium">
-                    <AlertCircle size={13} /> {errors.nombre}
+                    <AlertCircle size={13} /> {errors.name}
                   </p>
                 )}
               </div>
 
-              {/* Cantidad */}
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider mb-1.5 text-[var(--color-cacao)]">
-                  Cantidad disponible <span className="text-[var(--color-pompadour)]">*</span>
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  value={cantidad}
-                  onChange={(e) => {
-                    setCantidad(e.target.value === '' ? '' : Number(e.target.value));
-                    if (errors.cantidad) setErrors((prev) => ({ ...prev, cantidad: '' }));
-                  }}
-                  placeholder="1"
-                  className={`w-full px-4 py-2.5 rounded-xl bg-white border text-sm transition-all focus:outline-none focus:ring-2 ${
-                    errors.cantidad 
-                      ? 'border-rose-400 focus:ring-rose-200' 
-                      : 'border-[var(--color-dusty-rose)] focus:border-[var(--color-pompadour)] focus:ring-[var(--color-pompadour)]/20'
-                  }`}
-                />
-                {errors.cantidad && (
-                  <p className="flex items-center gap-1 text-xs text-rose-600 mt-1.5 font-medium">
-                    <AlertCircle size={13} /> {errors.cantidad}
-                  </p>
-                )}
+              {/* Tipo y Cantidad (Grid 2 cols) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                
+                {/* Tipo de recurso */}
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider mb-1.5 text-[var(--color-cacao)]">
+                    Tipo de recurso <span className="text-[var(--color-pompadour)]">*</span>
+                  </label>
+                  <div className="relative">
+                    <select
+                      name="type"
+                      value={formData.type}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2.5 rounded-xl bg-white border border-[var(--color-dusty-rose)] text-sm focus:outline-none focus:border-[var(--color-pompadour)] focus:ring-2 focus:ring-[var(--color-pompadour)]/20"
+                    >
+                      <option value="EQUIPO">Equipo / Máquina</option>
+                      <option value="MOBILIARIO">Mobiliario / Camilla / Silla</option>
+                      <option value="SALA">Sala / Cabina privada</option>
+                      <option value="HERRAMIENTA">Kit / Herramientas</option>
+                      <option value="OTRO">Otro insumo</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Cantidad */}
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider mb-1.5 text-[var(--color-cacao)]">
+                    Cantidad disponible <span className="text-[var(--color-pompadour)]">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    name="quantity"
+                    min="1"
+                    value={formData.quantity}
+                    onChange={handleChange}
+                    placeholder="1"
+                    className={`w-full px-4 py-2.5 rounded-xl bg-white border text-sm transition-all focus:outline-none focus:ring-2 ${
+                      errors.quantity 
+                        ? 'border-rose-400 focus:ring-rose-200' 
+                        : 'border-[var(--color-dusty-rose)] focus:border-[var(--color-pompadour)] focus:ring-[var(--color-pompadour)]/20'
+                    }`}
+                  />
+                  {errors.quantity && (
+                    <p className="flex items-center gap-1 text-xs text-rose-600 mt-1.5 font-medium">
+                      <AlertCircle size={13} /> {errors.quantity}
+                    </p>
+                  )}
+                </div>
               </div>
 
-              {/* Estado */}
+              {/* Estado del recurso */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider mb-1.5 text-[var(--color-cacao)]">
                   Estado actual <span className="text-[var(--color-pompadour)]">*</span>
                 </label>
                 <div className="grid grid-cols-3 gap-2">
-                  {['DISPONIBLE', 'MANTENIMIENTO', 'NO_DISPONIBLE'].map((item) => (
+                  {(['DISPONIBLE', 'MANTENIMIENTO', 'NO_DISPONIBLE'] as ResourceStatus[]).map((status) => (
                     <button
-                      key={item}
+                      key={status}
                       type="button"
-                      onClick={() => setEstado(item)}
+                      onClick={() => setFormData(prev => ({ ...prev, status }))}
                       className={`py-2 px-2 text-xs font-semibold rounded-xl border transition-all text-center ${
-                        estado === item
+                        formData.status === status
                           ? 'bg-[var(--color-pompadour)] text-white border-[var(--color-pompadour)] shadow-xs scale-[1.02]'
                           : 'bg-white text-[var(--color-cacao)]/80 border-[var(--color-dusty-rose)] hover:bg-[var(--color-mimi-pink)]/30'
                       }`}
                     >
-                      {item === 'DISPONIBLE' && 'Disponible'}
-                      {item === 'MANTENIMIENTO' && 'Mantenimiento'}
-                      {item === 'NO_DISPONIBLE' && 'Inactivo'}
+                      {status === 'DISPONIBLE' && 'Disponible'}
+                      {status === 'MANTENIMIENTO' && 'Mantenimiento'}
+                      {status === 'NO_DISPONIBLE' && 'Inactivo'}
                     </button>
                   ))}
                 </div>
@@ -300,42 +301,30 @@ export const ResourceRegister: React.FC<ResourceRegisterProps> = ({
               {/* Descripción */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider mb-1.5 text-[var(--color-cacao)]">
-                  Descripción / Observaciones <span className="text-[var(--color-pompadour)]">*</span>
+                  Descripción / Observaciones <span className="text-xs font-normal lowercase text-[var(--color-cacao)]/60">(opcional)</span>
                 </label>
                 <textarea
+                  name="description"
                   rows={3}
-                  value={descripcion}
-                  onChange={(e) => {
-                    setDescripcion(e.target.value);
-                    if (errors.descripcion) setErrors((prev) => ({ ...prev, descripcion: '' }));
-                  }}
-                  placeholder="Detalles sobre marca, cuidados, ubicación..."
-                  className={`w-full px-4 py-2.5 rounded-xl bg-white border text-sm transition-all focus:outline-none focus:ring-2 resize-none ${
-                    errors.descripcion 
-                      ? 'border-rose-400 focus:ring-rose-200' 
-                      : 'border-[var(--color-dusty-rose)] focus:border-[var(--color-pompadour)] focus:ring-[var(--color-pompadour)]/20'
-                  }`}
+                  value={formData.description}
+                  onChange={handleChange}
+                  placeholder="Detalles sobre ubicación, marca, cuidados o especificaciones técnicas..."
+                  className="w-full px-4 py-2.5 rounded-xl bg-white border border-[var(--color-dusty-rose)] text-sm focus:outline-none focus:border-[var(--color-pompadour)] focus:ring-2 focus:ring-[var(--color-pompadour)]/20 resize-none"
                 />
-                {errors.descripcion && (
-                  <p className="flex items-center gap-1 text-xs text-rose-600 mt-1.5 font-medium">
-                    <AlertCircle size={13} /> {errors.descripcion}
-                  </p>
-                )}
               </div>
 
               {/* Botón Guardar */}
               <button
                 type="submit"
-                disabled={loading}
-                className="w-full py-3 px-6 rounded-2xl bg-[var(--color-pompadour)] hover:opacity-90 text-white font-bold text-sm tracking-wide shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] disabled:opacity-50"
+                className="w-full py-3 px-6 rounded-2xl bg-[var(--color-pompadour)] hover:opacity-90 text-white font-bold text-sm tracking-wide shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
               >
-                {loading ? <Loader2 size={18} className="animate-spin" /> : <PlusCircle size={18} />}
-                {loading ? 'Guardando...' : 'Guardar Recurso'}
+                <PlusCircle size={18} />
+                Guardar Recurso
               </button>
             </form>
           </div>
 
-          {/* Listado de Recursos */}
+          {/* Listado de Recursos Existentes */}
           <div className="lg:col-span-6 space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -344,49 +333,55 @@ export const ResourceRegister: React.FC<ResourceRegisterProps> = ({
                   Recursos del Negocio ({resourcesList.length})
                 </h2>
               </div>
-              {fetchingList && <Loader2 size={16} className="animate-spin text-[var(--color-pompadour)]" />}
+              <span className="text-xs font-medium text-[var(--color-cacao)]/70">
+                Disponibles para asignar a servicios
+              </span>
             </div>
 
-            {resourcesList.length === 0 && !fetchingList ? (
+            {resourcesList.length === 0 ? (
               <div className="bg-[var(--color-cream)] border border-dashed border-[var(--color-dusty-rose)] rounded-3xl p-8 text-center text-[var(--color-cacao)]/60 space-y-2">
                 <Package size={36} className="mx-auto text-[var(--color-dusty-rose)]" />
                 <p className="font-medium text-sm">Aún no hay recursos dados de alta</p>
                 <p className="text-xs">Usa el formulario para añadir el primero.</p>
               </div>
             ) : (
-              <div className="space-y-3 max-h-[600px] overflow-y-auto pr-1">
-                {resourcesList.map((res, index) => (
+              <div className="space-y-3">
+                {resourcesList.map((res) => (
                   <div
-                    key={res.id || res.idRecurso || index}
+                    key={res.id}
                     className="bg-[var(--color-cream)] border border-[var(--color-dusty-rose)] rounded-2xl p-4.5 hover:shadow-md transition-shadow relative overflow-hidden group"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="space-y-1">
-                        <h3 className="font-bold text-base text-[var(--color-cacao)]">
-                          {res.nombre}
-                        </h3>
-                        {res.descripcion && (
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-bold text-base text-[var(--color-cacao)]">
+                            {res.name}
+                          </h3>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[var(--color-mimi-pink)] text-[var(--color-cacao)] uppercase">
+                            {res.type}
+                          </span>
+                        </div>
+                        {res.description && (
                           <p className="text-xs text-[var(--color-cacao)]/80 line-clamp-2">
-                            {res.descripcion}
+                            {res.description}
                           </p>
                         )}
                       </div>
+
                       <div className="shrink-0 text-right">
-                        {getStatusBadge(res.estado)}
+                        {getStatusBadge(res.status)}
                       </div>
                     </div>
 
                     <div className="mt-4 pt-3 border-t border-[var(--color-dusty-rose)]/60 flex items-center justify-between text-xs text-[var(--color-cacao)]/75">
                       <div className="flex items-center gap-1.5 font-medium">
                         <Boxes size={14} className="text-[var(--color-pompadour)]" />
-                        <span>Cantidad: <strong className="text-[var(--color-cacao)]">{res.cantidad}</strong></span>
+                        <span>Cantidad: <strong className="text-[var(--color-cacao)]">{res.quantity}</strong></span>
                       </div>
-                      {res.fechaCreacion && (
-                        <div className="flex items-center gap-1 text-[11px] text-[var(--color-cacao)]/60">
-                          <Clock size={12} />
-                          <span>{res.fechaCreacion}</span>
-                        </div>
-                      )}
+                      <div className="flex items-center gap-1 text-[11px] text-[var(--color-cacao)]/60">
+                        <Clock size={12} />
+                        <span>Registrado: {res.createdAt}</span>
+                      </div>
                     </div>
                   </div>
                 ))}
