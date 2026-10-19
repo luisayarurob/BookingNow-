@@ -4,12 +4,12 @@ import type { BusinessService } from "../services/apiService.ts";
 
 interface ServiceListProps {
   businesses: BusinessWithServices[];
-  onAddService: (businessId: number, businessName: string) => void;
+  onAddService: (businessId: number, businessName: string, businessCategory?: string) => void;
   onAddBusiness: () => void;
 }
 
-function formatPrice(p: number) {
-  return new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(p);
+function formatPrice(p?: number) {
+  return new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(p ?? 0);
 }
 
 function getServiceImageSrc(image?: string) {
@@ -72,8 +72,8 @@ export default function ServiceList({ businesses, onAddService, onAddBusiness }:
         ) : (
           <div className="flex flex-col gap-10">
             {businesses.map((business, index) => {
-              const businessId = business.idNegocio || business.id;
-              if (!businessId) return null;
+              const businessId = Number(business.idNegocio || business.id);
+              if (!Number.isInteger(businessId) || businessId <= 0) return null;
 
               return (
                 <section key={businessId}>
@@ -83,7 +83,7 @@ export default function ServiceList({ businesses, onAddService, onAddBusiness }:
                       <h2 className="font-display text-2xl font-semibold text-[#493333]">{business.nombre || "Sin nombre"}</h2>
                     </div>
                     <button
-                      onClick={() => onAddService(businessId, business.nombre || "Mi negocio")}
+                      onClick={() => onAddService(businessId, business.nombre || "Mi negocio", business.categoria)}
                       className="flex shrink-0 items-center gap-2 rounded-xl bg-[#F7769B] px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-[#F7769B]/30 transition-all hover:bg-[#f55d87]"
                     >
                       <Plus size={16} strokeWidth={2.5} />
@@ -113,12 +113,14 @@ export default function ServiceList({ businesses, onAddService, onAddBusiness }:
 }
 
 function ServiceCard({ service }: { service: BusinessService }) {
+  const image = service.imagenReferencia || service.imagenReferenciaBase64 || service.imagenesBase64?.[0];
+
   return (
     <div className="group bg-[#FCF6EF] rounded-2xl border border-[#E6C1C6] overflow-hidden hover:shadow-lg hover:shadow-[#F7769B]/10 hover:-translate-y-1 transition-all duration-200 flex flex-col">
       <div className="relative h-44 bg-[#FFDDED] overflow-hidden">
-        {service.imagenReferencia && (
+        {image && (
           <img
-            src={getServiceImageSrc(service.imagenReferencia)}
+            src={getServiceImageSrc(image)}
             alt={service.nombre}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
@@ -134,6 +136,11 @@ function ServiceCard({ service }: { service: BusinessService }) {
 
       <div className="p-4 flex flex-col gap-2 flex-1">
         <h3 className="font-display text-base font-semibold text-[#493333] leading-snug">{service.nombre}</h3>
+        {service.tipoServicio && (
+          <span className="w-fit rounded-full bg-[#FFDDED] px-2 py-1 text-[11px] font-semibold text-[#F7769B]">
+            {service.tipoServicio}
+          </span>
+        )}
         <p className="text-xs text-[#493333]/60 leading-relaxed line-clamp-2">{service.descripcion}</p>
 
         <div className="mt-auto pt-3 border-t border-[#E6C1C6] flex items-center justify-between">

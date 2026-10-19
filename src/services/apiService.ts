@@ -5,6 +5,7 @@ export interface Business {
   id?: number | string;
   idNegocio?: number | string;
   nombre?: string;
+  categoria?: string;
   [key: string]: any;
 }
 
@@ -15,6 +16,9 @@ export interface BusinessService {
   duracionMinutos?: number;
   precio?: number;
   descripcion?: string;
+  tipoServicio?: string;
+  imagenReferenciaBase64?: string;
+  imagenesBase64?: string[];
   [key: string]: any;
 }
 
@@ -23,7 +27,9 @@ export interface ServiceRegistration {
   duracionMinutos: number;
   precio: number;
   descripcion: string;
-  imagenReferencia?: string;
+  tipoServicio?: string;
+  imagenReferenciaBase64?: string;
+  imagenesBase64?: string[];
 }
 
 export interface LoginResponse {

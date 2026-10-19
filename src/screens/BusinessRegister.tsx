@@ -2,22 +2,11 @@ import { useState, useRef, useCallback } from "react";
 import { CheckCircle2, Upload, X, ImagePlus, Building2 } from "lucide-react";
 import { registrarNegocio } from "../services/apiService.ts";
 import type { BusinessRegistration } from "../services/apiService.ts";
+import { CATEGORIAS_NEGOCIO } from "../config/categorias";
 
 interface BusinessRegisterProps {
-  onSuccess: (businessName: string) => void;
+  onSuccess: (businessName: string, businessCategory: string) => void;
 }
-
-const CATEGORIES = [
-  "Belleza y estética",
-  "Spa y bienestar",
-  "Peluquería",
-  "Uñas y nail art",
-  "Maquillaje",
-  "Masajes terapéuticos",
-  "Depilación",
-  "Tatuajes y piercings",
-  "Barbería",
-];
 
 const inputBase =
   "w-full rounded-xl border px-4 py-3 text-sm outline-none transition-all placeholder-[#8D93CB] bg-white/60 focus:ring-2 focus:ring-[#F7769B]/40 focus:border-[#F7769B]";
@@ -162,7 +151,7 @@ export default function BusinessRegister({ onSuccess }: BusinessRegisterProps) {
             <h2 className="font-display text-2xl text-[#493333] mb-2">¡Negocio creado!</h2>
             <p className="text-sm text-[#493333]/70 mb-6">Tu negocio fue registrado exitosamente. Ahora configura su horario de atención.</p>
             <button
-              onClick={() => onSuccess(name.trim())}
+              onClick={() => onSuccess(name.trim(), category)}
               className="w-full bg-[#F7769B] text-white font-semibold py-3 rounded-xl hover:bg-[#f55d87] transition-colors"
             >
               Configurar horario
@@ -220,7 +209,7 @@ export default function BusinessRegister({ onSuccess }: BusinessRegisterProps) {
                   value={category} onChange={e => setCategory(e.target.value)}
                 >
                   <option value="">Seleccionar...</option>
-                  {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  {CATEGORIAS_NEGOCIO.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </Field>
             </div>

@@ -37,6 +37,7 @@ export default function App() {
   const [businessName, setBusinessName] = useState<string>(() => {
     return localStorage.getItem("nombreNegocio") || BUSINESS_NAME;
   });
+  const [businessCategory, setBusinessCategory] = useState<string | undefined>();
 
   useEffect(() => {
     localStorage.setItem("app_screen", screen);
@@ -66,6 +67,7 @@ export default function App() {
       setBusinessName(loadedBusinesses[0].nombre);
       localStorage.setItem("nombreNegocio", loadedBusinesses[0].nombre);
     }
+    setBusinessCategory(loadedBusinesses[0]?.categoria);
     if (loadedBusinesses[0]?.idNegocio || loadedBusinesses[0]?.id) {
       localStorage.setItem("idNegocio", String(loadedBusinesses[0].idNegocio || loadedBusinesses[0].id));
     }
@@ -121,16 +123,18 @@ export default function App() {
       )}
       {screen === "business-register" && (
         <BusinessRegister
-          onSuccess={(registeredName) => {
+          onSuccess={(registeredName, registeredCategory) => {
             const storedName = registeredName || localStorage.getItem("nombreNegocio") || BUSINESS_NAME;
             const registeredBusinessId = Number(localStorage.getItem("idNegocio"));
             localStorage.setItem("nombreNegocio", storedName);
             setBusinessName(storedName);
+            setBusinessCategory(registeredCategory);
             if (registeredBusinessId > 0) {
               setBusinesses([
                 {
                   idNegocio: registeredBusinessId,
                   nombre: storedName,
+                  categoria: registeredCategory,
                   services: [],
                 },
               ]);
@@ -154,6 +158,7 @@ export default function App() {
       {screen === "service-register" && (
         <ServiceRegister
           businessName={businessName}
+          businessCategory={businessCategory}
           onSuccess={() => setScreen("service-assignment")}
         />
       )}
@@ -167,9 +172,10 @@ export default function App() {
         <ServiceList
           businesses={businesses}
           onAddBusiness={() => setScreen("business-register")}
-          onAddService={(businessId: number, name: string) => {
+          onAddService={(businessId: number, name: string, category?: string) => {
             localStorage.setItem("idNegocio", String(businessId));
             setBusinessName(name);
+            setBusinessCategory(category);
             setServices(
               businesses.find((b) => (b.idNegocio || b.id) === businessId)?.services || []
             );
