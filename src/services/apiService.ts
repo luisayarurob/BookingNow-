@@ -268,3 +268,124 @@ export async function listarRecursos(idNegocio: number, token: string): Promise<
   }
   return response.json();
 }
+
+export interface RegistrarEmpleadoCommand {
+  nombres: string;
+  documento: string;
+  telefono: string;
+  correo: string;
+}
+
+export interface Empleado {
+  idEmpleado?: number | string;
+  idNegocio?: number | string;
+  nombres: string;
+  documento: string;
+  telefono: string;
+  correo: string;
+  [key: string]: any;
+}
+
+// 1. Guardar un empleado nuevo
+export async function registrarEmpleado(
+  idNegocio: number,
+  payload: RegistrarEmpleadoCommand,
+  token: string
+) {
+  const response = await fetch(`${API_URL}/api/negocios/${idNegocio}/empleados`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = (await response.json().catch(() => ({}))) as ApiErrorResponse;
+  if (!response.ok) {
+    throw new ServiceApiError(
+      data.detail || "No fue posible registrar el empleado.",
+      response.status,
+      data.campos
+    );
+  }
+
+  return data;
+}
+
+// 2. Listar empleados del negocio
+export async function listarEmpleados(idNegocio: number, token: string): Promise<Empleado[]> {
+  const response = await fetch(`${API_URL}/api/negocios/${idNegocio}/empleados`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) {
+    return [];
+  }
+  return response.json();
+}
+export interface CrearReservaCommand {
+  idServicio: number;
+  idEmpleado?: number; // Opcional dependiendo de si el servicio lo requiere
+  idRecurso?: number;  // Opcional dependiendo de si el servicio lo requiere
+  fecha: string;       // Ej: "2026-10-19"
+  hora: string;        // Ej: "10:00" o "10:00:00" según pida el backend
+}
+
+export interface Reserva {
+  idReserva?: number;
+  idCliente?: number;
+  idServicio?: number;
+  idEmpleado?: number;
+  idRecurso?: number;
+  fecha: string;
+  hora: string;
+  estado: string;
+  fechaCreacion?: string;
+}
+
+export async function crearReserva(payload: CrearReservaCommand, token: string) {
+  const response = await fetch(`${API_URL}/api/reservas`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`, // El token del cliente logueado (Historia de abuso)
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = (await response.json().catch(() => ({}))) as ApiErrorResponse;
+  if (!response.ok) {
+    throw new ServiceApiError(
+      data.detail || "No fue posible registrar la reserva.",
+      response.status,
+      data.campos
+    );
+  }
+
+  return data;
+}
+export interface SlotDisponibilidad {
+  hora: string;
+  empleadosDisponibles: number[];
+  recursosDisponibles: number[];
+}
+
+export async function consultarDisponibilidad(
+  idServicio: number,
+  fecha: string,
+  token: string
+): Promise<SlotDisponibilidad[]> {
+  const response = await fetch(`${API_URL}/api/servicios/${idServicio}/disponibilidad?fecha=${fecha}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    return [];
+  }
+
+  return response.json();
+}
