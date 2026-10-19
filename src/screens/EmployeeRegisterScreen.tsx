@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   UserPlus, 
   Users, 
@@ -9,76 +9,85 @@ import {
   CheckCircle2, 
   AlertCircle, 
   Building2,
-  Calendar,
-  ShieldCheck
+  ShieldCheck,
+  Loader2
 } from 'lucide-react';
-import { Employee, EmployeeFormData } from '../types/employee';
+import { registrarEmpleado, listarEmpleados, Empleado, ServiceApiError } from '../services/apiService';
 
 interface EmployeeRegisterScreenProps {
-  businessId?: string;
   businessName?: string;
-  onEmployeeCreated?: (newEmployee: Employee) => void;
+  onEmployeeCreated?: (newEmployee: Empleado) => void;
 }
 
 export const EmployeeRegisterScreen: React.FC<EmployeeRegisterScreenProps> = ({
-  businessId = 'biz-001',
   businessName = 'Mi Negocio Principal',
   onEmployeeCreated
 }) => {
-  // Estado del formulario
-  const [formData, setFormData] = useState<EmployeeFormData>({
+  // Estado del formulario (Mantenemos los nombres en inglés para la UI local)
+  const [formData, setFormData] = useState({
     fullName: '',
     documentId: '',
     phone: '',
     email: ''
   });
 
-  // Errores de validación
-  const [errors, setErrors] = useState<Partial<Record<keyof EmployeeFormData, string>>>({});
+  // Estados de interfaz y validación
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [serverError, setServerError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [fetchingList, setFetchingList] = useState(false);
 
-  // Lista local de empleados iniciales (simulando base de datos del negocio)
-  const [employeesList, setEmployeesList] = useState<Employee[]>([
-    {
-      id: 'emp-1',
-      businessId,
-      fullName: 'Carolina Gómez Restrepo',
-      documentId: '1035422890',
-      phone: '3104509876',
-      email: 'carolina.gomez@ejemplo.com',
-      isActive: true,
-      createdAt: '2026-10-01'
+  // Lista de empleados del backend
+  const [employeesList, setEmployeesList] = useState<Empleado[]>([]);
+
+  // 1. Cargar empleados desde el backend
+  const cargarEmpleados = async () => {
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    const businessId = Number(localStorage.getItem('idNegocio') || sessionStorage.getItem('idNegocio'));
+
+    if (!token || !businessId) return;
+
+    try {
+      setFetchingList(true);
+      const data = await listarEmpleados(businessId, token);
+      setEmployeesList(data);
+    } catch (err) {
+      console.error('Error al cargar empleados:', err);
+    } finally {
+      setFetchingList(false);
     }
-  ]);
+  };
 
-  // Validaciones según Criterios de Aceptación
+  useEffect(() => {
+    cargarEmpleados();
+  }, []);
+
+  // 2. Validaciones locales
   const validate = (): boolean => {
-    const newErrors: Partial<Record<keyof EmployeeFormData, string>> = {};
+    const newErrors: Record<string, string> = {};
 
-    // 1. Nombre obligatorio y longitud mínima
     if (!formData.fullName.trim()) {
       newErrors.fullName = 'Los nombres y apellidos son obligatorios.';
     } else if (formData.fullName.trim().length < 3) {
       newErrors.fullName = 'Ingresa un nombre válido de al menos 3 caracteres.';
     }
 
-    // 2. Documento válido (solo números, entre 6 y 11 dígitos para CC estándar)
     const docRegex = /^[0-9]{6,11}$/;
     if (!formData.documentId.trim()) {
       newErrors.documentId = 'El número de documento de identidad (CC) es obligatorio.';
     } else if (!docRegex.test(formData.documentId.trim())) {
-      newErrors.documentId = 'El documento debe contener entre 6 y 11 dígitos numéricos sin puntos ni espacios.';
+      newErrors.documentId = 'El documento debe contener entre 6 y 11 dígitos numéricos.';
     } else {
-      // CA: No permitir registrar dos empleados con el mismo documento en este negocio
+      // Validación local para mitigar la HU (evitar ir al back si ya sabemos que existe)
       const documentExists = employeesList.some(
-        emp => emp.businessId === businessId && emp.documentId === formData.documentId.trim()
+        emp => emp.documento === formData.documentId.trim()
       );
       if (documentExists) {
         newErrors.documentId = 'Ya existe un empleado registrado con este número de documento en este negocio.';
       }
     }
 
-    // 3. Teléfono obligatorio (formato de celular colombiano: 10 dígitos o fijo)
     const phoneRegex = /^[0-9]{7,12}$/;
     if (!formData.phone.trim()) {
       newErrors.phone = 'El teléfono de contacto es obligatorio.';
@@ -86,7 +95,6 @@ export const EmployeeRegisterScreen: React.FC<EmployeeRegisterScreenProps> = ({
       newErrors.phone = 'Ingresa un número telefónico válido (entre 7 y 10 dígitos).';
     }
 
-    // 4. Correo electrónico con formato válido
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!formData.email.trim()) {
       newErrors.email = 'El correo electrónico es obligatorio.';
@@ -105,40 +113,69 @@ export const EmployeeRegisterScreen: React.FC<EmployeeRegisterScreenProps> = ({
       [name]: value
     }));
 
-    if (errors[name as keyof EmployeeFormData]) {
-      setErrors(prev => ({ ...prev, [name]: undefined }));
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // 3. Enviar al backend
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSuccessMessage(null);
+    setServerError(null);
 
     if (!validate()) return;
 
-    const newEmployee: Employee = {
-      id: `emp-${Date.now()}`,
-      businessId,
-      fullName: formData.fullName.trim(),
-      documentId: formData.documentId.trim(),
-      phone: formData.phone.trim(),
-      email: formData.email.trim().toLowerCase(),
-      isActive: true,
-      createdAt: new Date().toISOString().split('T')[0]
-    };
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    const businessId = Number(localStorage.getItem('idNegocio') || sessionStorage.getItem('idNegocio'));
 
-    setEmployeesList(prev => [newEmployee, ...prev]);
-    if (onEmployeeCreated) onEmployeeCreated(newEmployee);
+    if (!token || !businessId || isNaN(businessId)) {
+      setServerError('Tu sesión ha expirado o no tienes un negocio asociado.');
+      return;
+    }
 
-    setSuccessMessage(`¡Empleado "${newEmployee.fullName}" registrado exitosamente!`);
-    setFormData({
-      fullName: '',
-      documentId: '',
-      phone: '',
-      email: ''
-    });
+    try {
+      setLoading(true);
+      
+      const payload = {
+        nombres: formData.fullName.trim(),
+        documento: formData.documentId.trim(),
+        telefono: formData.phone.trim(),
+        correo: formData.email.trim().toLowerCase()
+      };
 
-    setTimeout(() => setSuccessMessage(null), 4000);
+      const nuevoEmpleado = await registrarEmpleado(businessId, payload, token);
+
+      setSuccessMessage(`¡Empleado "${payload.nombres}" registrado exitosamente!`);
+      if (onEmployeeCreated) onEmployeeCreated(nuevoEmpleado as Empleado);
+
+      setFormData({
+        fullName: '',
+        documentId: '',
+        phone: '',
+        email: ''
+      });
+      setErrors({});
+
+      // Recargamos la lista desde el servidor
+      await cargarEmpleados();
+      
+      setTimeout(() => setSuccessMessage(null), 4000);
+    } catch (err: any) {
+      if (err instanceof ServiceApiError && err.fields) {
+        // Mapear los errores del backend a los campos del frontend
+        const mappedErrors: Record<string, string> = {};
+        if (err.fields.nombres) mappedErrors.fullName = err.fields.nombres;
+        if (err.fields.documento) mappedErrors.documentId = err.fields.documento;
+        if (err.fields.telefono) mappedErrors.phone = err.fields.telefono;
+        if (err.fields.correo) mappedErrors.email = err.fields.correo;
+        setErrors(mappedErrors);
+      } else {
+        setServerError(err.message || 'Ocurrió un error al intentar registrar el empleado.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -159,7 +196,14 @@ export const EmployeeRegisterScreen: React.FC<EmployeeRegisterScreenProps> = ({
           </p>
         </div>
 
-        {/* Mensaje de éxito */}
+        {/* Mensajes Globales */}
+        {serverError && (
+          <div className="flex items-center gap-3 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 text-sm shadow-sm">
+            <AlertCircle size={20} className="text-rose-600 shrink-0" />
+            <p className="font-medium">{serverError}</p>
+          </div>
+        )}
+
         {successMessage && (
           <div className="flex items-center gap-3 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-sm shadow-sm">
             <CheckCircle2 size={20} className="text-emerald-600 shrink-0" />
@@ -294,10 +338,11 @@ export const EmployeeRegisterScreen: React.FC<EmployeeRegisterScreenProps> = ({
               {/* Botón Guardar */}
               <button
                 type="submit"
-                className="w-full mt-2 py-3 px-6 rounded-2xl bg-[var(--color-pompadour)] hover:opacity-90 text-white font-bold text-sm tracking-wide shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
+                disabled={loading}
+                className="w-full mt-2 py-3 px-6 rounded-2xl bg-[var(--color-pompadour)] hover:opacity-90 text-white font-bold text-sm tracking-wide shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] disabled:opacity-50"
               >
-                <UserPlus size={18} />
-                Guardar Empleado
+                {loading ? <Loader2 size={18} className="animate-spin" /> : <UserPlus size={18} />}
+                {loading ? 'Guardando...' : 'Guardar Empleado'}
               </button>
             </form>
           </div>
@@ -311,36 +356,34 @@ export const EmployeeRegisterScreen: React.FC<EmployeeRegisterScreenProps> = ({
                   Equipo de Trabajo ({employeesList.length})
                 </h2>
               </div>
-              <span className="text-xs font-medium text-[var(--color-cacao)]/70">
-                Disponibles para servicios
-              </span>
+              {fetchingList && <Loader2 size={16} className="animate-spin text-[var(--color-pompadour)]" />}
             </div>
 
-            {employeesList.length === 0 ? (
+            {employeesList.length === 0 && !fetchingList ? (
               <div className="bg-[var(--color-cream)] border border-dashed border-[var(--color-dusty-rose)] rounded-3xl p-8 text-center text-[var(--color-cacao)]/60 space-y-2">
                 <Users size={36} className="mx-auto text-[var(--color-dusty-rose)]" />
                 <p className="font-medium text-sm">No hay empleados registrados aún</p>
                 <p className="text-xs">Usa el formulario para añadir colaboradores.</p>
               </div>
             ) : (
-              <div className="space-y-3">
-                {employeesList.map((emp) => (
+              <div className="space-y-3 max-h-[600px] overflow-y-auto pr-1">
+                {employeesList.map((emp, index) => (
                   <div
-                    key={emp.id}
+                    key={emp.idEmpleado || index}
                     className="bg-[var(--color-cream)] border border-[var(--color-dusty-rose)] rounded-2xl p-4.5 hover:shadow-md transition-shadow"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-full bg-[var(--color-pompadour)]/20 text-[var(--color-pompadour)] flex items-center justify-center font-bold text-sm shrink-0">
-                          {emp.fullName.slice(0, 2).toUpperCase()}
+                        <div className="w-10 h-10 rounded-full bg-[var(--color-pompadour)]/20 text-[var(--color-pompadour)] flex items-center justify-center font-bold text-sm shrink-0 uppercase">
+                          {emp.nombres ? emp.nombres.slice(0, 2) : 'EM'}
                         </div>
                         <div>
                           <h3 className="font-bold text-base text-[var(--color-cacao)]">
-                            {emp.fullName}
+                            {emp.nombres}
                           </h3>
                           <div className="flex items-center gap-1.5 text-xs text-[var(--color-cacao)]/75 mt-0.5">
                             <ShieldCheck size={14} className="text-[var(--color-pompadour)]" />
-                            <span>CC: {emp.documentId}</span>
+                            <span>CC: {emp.documento}</span>
                           </div>
                         </div>
                       </div>
@@ -354,11 +397,11 @@ export const EmployeeRegisterScreen: React.FC<EmployeeRegisterScreenProps> = ({
                     <div className="mt-3.5 pt-3 border-t border-[var(--color-dusty-rose)]/60 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-[var(--color-cacao)]/80">
                       <div className="flex items-center gap-2">
                         <Phone size={13} className="text-[var(--color-cacao)]/60" />
-                        <span>{emp.phone}</span>
+                        <span>{emp.telefono}</span>
                       </div>
                       <div className="flex items-center gap-2 truncate">
                         <Mail size={13} className="text-[var(--color-cacao)]/60" />
-                        <span className="truncate">{emp.email}</span>
+                        <span className="truncate" title={emp.correo}>{emp.correo}</span>
                       </div>
                     </div>
                   </div>
