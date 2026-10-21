@@ -2,14 +2,28 @@ import { useState, useRef } from "react";
 import { CheckCircle2, ImagePlus, X, Scissors } from "lucide-react";
 import { createService } from "../services/apiService";
 import { saveServiceImage } from "../services/imageStorage";
+import { obtenerCategoriasDeServicio } from "../config/categorias";
 
 interface ServiceRegisterProps {
   businessName: string;
+  businessCategory?: string;
   onSuccess: () => void;
 }
 
 const inputBase =
   "w-full rounded-xl border px-4 py-3 text-sm outline-none transition-all placeholder-[#8D93CB] bg-white/60 focus:ring-2 focus:ring-[#F7769B]/40 focus:border-[#F7769B]";
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") resolve(reader.result);
+      else reject(new Error("No fue posible leer la imagen."));
+    };
+    reader.onerror = () => reject(new Error("No fue posible leer la imagen."));
+    reader.readAsDataURL(file);
+  });
+}
 
 function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
   return (
@@ -21,9 +35,10 @@ function Field({ label, error, children }: { label: string; error?: string; chil
   );
 }
 
-export default function ServiceRegister({ businessName, onSuccess }: ServiceRegisterProps) {
+export default function ServiceRegister({ businessName, businessCategory, onSuccess }: ServiceRegisterProps) {
   const [serviceName, setServiceName] = useState("");
   const [description, setDescription] = useState("");
+  const [serviceCategory, setServiceCategory] = useState("");
   const [duration, setDuration] = useState("");
   const [price, setPrice] = useState("");
   const [image, setImage] = useState<File | null>(null);
@@ -31,20 +46,22 @@ export default function ServiceRegister({ businessName, onSuccess }: ServiceRegi
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [success, setSuccess] = useState(false);
   const imageRef = useRef<HTMLInputElement>(null);
+  const serviceCategories = obtenerCategoriasDeServicio(businessCategory);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     const errs: Record<string, string> = {};
     if (serviceName.trim().length < 3) errs.name = "Mínimo 3 caracteres.";
     if (!description.trim()) errs.description = "Agrega una descripción del servicio.";
+    if (!serviceCategory) errs.category = "Selecciona una categoría para el servicio.";
     const dur = Number(duration);
     if (!duration || isNaN(dur) || dur <= 0) errs.duration = "La duración debe ser mayor a 0 minutos.";
     const pr = Number(price);
     if (price === "" || isNaN(pr) || pr < 0) errs.price = "El precio no puede ser negativo.";
     if (Object.keys(errs).length) { setErrors(errs); return; }
 
-    const token = sessionStorage.getItem("token");
-    const businessId = Number(sessionStorage.getItem("idNegocio"));
+    const token = localStorage.getItem("token");
+    const businessId = Number(localStorage.getItem("idNegocio"));
     if (!token) {
       setErrors({ name: "Tu sesión expiró. Inicia sesión nuevamente." });
       return;
@@ -55,11 +72,15 @@ export default function ServiceRegister({ businessName, onSuccess }: ServiceRegi
     }
 
     try {
+      const imageBase64 = image ? await fileToBase64(image) : undefined;
       const createdService = await createService(businessId, {
         nombre: serviceName.trim(),
         duracionMinutos: Number(duration),
         precio: Number(price),
         descripcion: description.trim(),
+        tipoServicio: serviceCategory,
+        imagenReferenciaBase64: imageBase64,
+        imagenesBase64: imageBase64 ? [imageBase64] : [],
       }, token);
 
       if (image) {
@@ -75,6 +96,7 @@ export default function ServiceRegister({ businessName, onSuccess }: ServiceRegi
       const fields = apiError.fields || {};
       setErrors({
         name: fields.nombre || apiError.message,
+        category: fields.tipoServicio,
         description: fields.descripcion,
         duration: fields.duracionMinutos,
         price: fields.precio,
@@ -110,6 +132,11 @@ export default function ServiceRegister({ businessName, onSuccess }: ServiceRegi
         </div>
 
         <div className="bg-[#FCF6EF] rounded-3xl shadow-xl border border-[#E6C1C6] p-8">
+          {errors.general && (
+            <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-600">
+              {errors.general}
+            </div>
+          )}
           <form onSubmit={submit} className="flex flex-col gap-5">
             {/* Locked business field */}
             <Field label="Negocio asociado">
@@ -128,6 +155,19 @@ export default function ServiceRegister({ businessName, onSuccess }: ServiceRegi
                 value={serviceName} onChange={e => setServiceName(e.target.value)}
                 placeholder="Ej: Manicura semipermanente"
               />
+            </Field>
+
+            <Field label="Tipo de servicio" error={errors.category}>
+              <select
+                className={`${inputBase} ${errors.category ? "border-red-400" : "border-[#E6C1C6]"} appearance-none cursor-pointer`}
+                value={serviceCategory}
+                onChange={e => setServiceCategory(e.target.value)}
+              >
+                <option value="">Seleccionar...</option>
+                {serviceCategories.map(category => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
+              </select>
             </Field>
 
             <Field label="Descripción" error={errors.description}>

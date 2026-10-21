@@ -5,17 +5,32 @@ export interface Business {
   id?: number | string;
   idNegocio?: number | string;
   nombre?: string;
+  categoria?: string;
   [key: string]: any;
 }
 
 export interface BusinessService {
   id?: number | string;
   idServicio?: number | string;
+  idNegocio?: number | string;
   nombre?: string;
+  nombreNegocio?: string;
+  categoriaNegocio?: string;
   duracionMinutos?: number;
   precio?: number;
   descripcion?: string;
+  tipoServicio?: string;
+  imagenReferenciaBase64?: string;
+  imagenesBase64?: string[];
   [key: string]: any;
+}
+
+export interface ServicePage {
+  contenido: BusinessService[];
+  pagina: number;
+  tamano: number;
+  totalElementos: number;
+  totalPaginas: number;
 }
 
 export interface ServiceRegistration {
@@ -23,7 +38,9 @@ export interface ServiceRegistration {
   duracionMinutos: number;
   precio: number;
   descripcion: string;
-  imagenReferencia?: string;
+  tipoServicio?: string;
+  imagenReferenciaBase64?: string;
+  imagenesBase64?: string[];
 }
 
 export interface LoginResponse {
@@ -211,6 +228,32 @@ export async function listarServicios(idNegocio: number, token: string): Promise
   }
   return response.json();
 }
+
+export async function buscarServicios(params: {
+  nombre?: string;
+  tipo?: string;
+  pagina?: number;
+  tamano?: number;
+}): Promise<ServicePage> {
+  const query = new URLSearchParams();
+
+  if (params.nombre?.trim()) query.set("nombre", params.nombre.trim());
+  if (params.tipo?.trim()) query.set("tipo", params.tipo.trim());
+  query.set("pagina", String(params.pagina ?? 0));
+  query.set("tamano", String(params.tamano ?? 20));
+
+  const response = await fetch(`${API_URL}/api/servicios?${query.toString()}`, {
+    headers: { Accept: "application/json" },
+  });
+  const data = (await response.json().catch(() => ({}))) as ServicePage & ApiErrorResponse;
+
+  if (!response.ok) {
+    throw new Error(data.detail || `No fue posible listar los servicios (${response.status}).`);
+  }
+
+  return data;
+}
+
 export interface RegistrarRecursoCommand {
   nombre: string;
   cantidad: number;
@@ -308,6 +351,19 @@ export async function registrarEmpleado(
       response.status,
       data.campos
     );
+  }
+
+  return data;
+}
+
+export async function obtenerServicio(idServicio: string | number): Promise<BusinessService> {
+  const response = await fetch(`${API_URL}/api/servicios/${encodeURIComponent(String(idServicio))}`, {
+    headers: { Accept: "application/json" },
+  });
+  const data = (await response.json().catch(() => ({}))) as BusinessService & ApiErrorResponse;
+
+  if (!response.ok) {
+    throw new Error(data.detail || `No fue posible obtener el servicio (${response.status}).`);
   }
 
   return data;

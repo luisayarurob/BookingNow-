@@ -52,6 +52,7 @@ export const ClientHomeScreen: React.FC<ClientHomeScreenProps> = ({
       {activeView === "detail" && selectedService && (
         <ServiceDetailScreen
           service={selectedService}
+          serviceId={selectedService.id}
           onBack={() => setActiveView("search")}
           onStartBooking={handleStartBooking}
         />
