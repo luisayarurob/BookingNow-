@@ -249,6 +249,11 @@ export async function buscarServicios(params: {
 
   if (!response.ok) {
     throw new Error(data.detail || `No fue posible listar los servicios (${response.status}).`);
+  }
+
+  return data;
+}
+
 export interface RegistrarRecursoCommand {
   nombre: string;
   cantidad: number;
@@ -362,6 +367,8 @@ export async function obtenerServicio(idServicio: string | number): Promise<Busi
   }
 
   return data;
+}
+
 // 2. Listar empleados del negocio
 export async function listarEmpleados(idNegocio: number, token: string): Promise<Empleado[]> {
   const response = await fetch(`${API_URL}/api/negocios/${idNegocio}/empleados`, {
