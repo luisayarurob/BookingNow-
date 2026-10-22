@@ -1,18 +1,17 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   Briefcase, 
   Users, 
   Boxes, 
   Check, 
-  X, 
   Save, 
   AlertCircle, 
   CheckCircle2, 
   ChevronRight,
-  ShieldAlert,
   Info,
   Building2
 } from 'lucide-react';
+import { listarEmpleados, listarRecursos, listarServicios } from '../services/apiService';
 import { Employee } from '../types/employee';
 import { Resource } from '../types/resource';
 import { ServiceSummary, ServiceAssignment } from '../types/serviceAssignment';
@@ -23,82 +22,206 @@ interface ServiceAssignmentScreenProps {
   onSaved?: (assignment: ServiceAssignment) => void;
 }
 
+const getAssignmentDefaults = (serviceName: string = '') => {
+  const normalized = serviceName.toLowerCase();
+
+  if (
+    normalized.includes('asesor') ||
+    normalized.includes('consult') ||
+    normalized.includes('imagen')
+  ) {
+    return { requiresEmployees: true, requiresResources: false };
+  }
+
+  if (
+    normalized.includes('cabina') ||
+    normalized.includes('spa') ||
+    normalized.includes('cancha') ||
+    normalized.includes('sala')
+  ) {
+    return { requiresEmployees: false, requiresResources: true };
+  }
+
+  return { requiresEmployees: true, requiresResources: true };
+};
+
 export const ServiceAssignmentScreen: React.FC<ServiceAssignmentScreenProps> = ({
-  businessId = 'biz-001',
+  businessId,
   businessName = 'Mi Negocio Principal',
   onSaved
 }) => {
-  // Lista de servicios del negocio
-  const [services] = useState<ServiceSummary[]>([
-    { id: 'srv-1', businessId, name: 'Corte de Cabello & Barba', category: 'Peluquería', price: 35000, durationMinutes: 45 },
-    { id: 'srv-2', businessId, name: 'Asesoría de Imagen Personal', category: 'Consultoría', price: 60000, durationMinutes: 60 },
-    { id: 'srv-3', businessId, name: 'Alquiler Cabina de Masajes', category: 'Espacio', price: 45000, durationMinutes: 60 }
-  ]);
+  const [services, setServices] = useState<ServiceSummary[]>([]);
+  const [availableEmployees, setAvailableEmployees] = useState<Employee[]>([]);
+  const [availableResources, setAvailableResources] = useState<Resource[]>([]);
+  const [selectedServiceId, setSelectedServiceId] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  // Empleados disponibles registrados en este negocio (HU-060101)
-  const [availableEmployees] = useState<Employee[]>([
-    { id: 'emp-1', businessId, fullName: 'Carolina Gómez Restrepo', documentId: '1035422890', phone: '3104509876', email: 'carolina@ejemplo.com', isActive: true, createdAt: '2026-10-01' },
-    { id: 'emp-2', businessId, fullName: 'Mateo Restrepo Morales', documentId: '1035498123', phone: '3001234567', email: 'mateo@ejemplo.com', isActive: true, createdAt: '2026-10-02' },
-    { id: 'emp-3', businessId, fullName: 'Daniela Vélez', documentId: '1020456789', phone: '3119876543', email: 'daniela@ejemplo.com', isActive: true, createdAt: '2026-10-03' }
-  ]);
+  const resolveBusinessId = () => {
+    const stored = localStorage.getItem('idNegocio');
+    const fromStorage = Number(stored ?? 0);
+    const fromProp = Number(businessId ?? 0);
 
-  // Recursos disponibles registrados en este negocio (HU-040101)
-  const [availableResources] = useState<Resource[]>([
-    { id: 'res-1', businessId, name: 'Silla Barbera Hidráulica #1', type: 'MOBILIARIO', quantity: 2, status: 'DISPONIBLE', createdAt: '2026-10-01' },
-    { id: 'res-2', businessId, name: 'Kit Tijeras & Máquina Wahl', type: 'HERRAMIENTA', quantity: 3, status: 'DISPONIBLE', createdAt: '2026-10-01' },
-    { id: 'res-3', businessId, name: 'Cabina Spa Ergonómica', type: 'SALA', quantity: 1, status: 'DISPONIBLE', createdAt: '2026-10-02' }
-  ]);
+    if (stored && Number.isFinite(fromStorage) && fromStorage > 0) {
+      return fromStorage;
+    }
 
-  // Servicio activo seleccionado
-  const [selectedServiceId, setSelectedServiceId] = useState<string>(services[0]?.id || '');
+    if (Number.isFinite(fromProp) && fromProp > 0) {
+      return fromProp;
+    }
 
-  // Configuración de asignación para el servicio activo
+    return 0;
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchData = async () => {
+      const token = localStorage.getItem('token');
+      const activeBusinessId = resolveBusinessId();
+
+      if (!token || !activeBusinessId) {
+        if (isMounted) {
+          setServices([]);
+          setAvailableEmployees([]);
+          setAvailableResources([]);
+          setSelectedServiceId('');
+          setIsLoading(false);
+          setLoadError('No hay un negocio o sesión activa para cargar los servicios.');
+        }
+        return;
+      }
+
+      try {
+        if (isMounted) {
+          setIsLoading(true);
+          setLoadError(null);
+        }
+
+        const [serviceRows, employeeRows, resourceRows] = await Promise.all([
+          listarServicios(activeBusinessId, token),
+          listarEmpleados(activeBusinessId, token),
+          listarRecursos(activeBusinessId, token)
+        ]);
+
+        if (!isMounted) return;
+
+        const mappedServices: ServiceSummary[] = serviceRows.map((service) => ({
+          id: String(service.id ?? service.idServicio ?? ''),
+          businessId: String(activeBusinessId),
+          name: service.nombre ?? 'Servicio sin nombre',
+          category: service.categoria ?? service.descripcion ?? 'General',
+          price: Number(service.precio ?? 0),
+          durationMinutes: Number(service.duracionMinutos ?? 0)
+        }));
+
+        const mappedEmployees: Employee[] = employeeRows.map((employee) => ({
+          id: String(employee.id ?? employee.idEmpleado ?? ''),
+          businessId: String(activeBusinessId),
+          fullName: employee.nombres ?? employee.nombre ?? 'Empleado sin nombre',
+          documentId: employee.documento ?? '',
+          phone: employee.telefono ?? '',
+          email: employee.correo ?? '',
+          isActive: true,
+          createdAt: employee.fechaCreacion ?? new Date().toISOString()
+        }));
+
+        const mappedResources: Resource[] = resourceRows.map((resource) => ({
+          id: String(resource.id ?? resource.idRecurso ?? ''),
+          businessId: String(activeBusinessId),
+          name: resource.nombre ?? 'Recurso sin nombre',
+          type: 'OTRO',
+          quantity: Number(resource.cantidad ?? 1),
+          status: (resource.estado ?? 'DISPONIBLE') as Resource['status'],
+          description: resource.descripcion ?? '',
+          createdAt: resource.fechaCreacion ?? new Date().toISOString()
+        }));
+
+        setServices(mappedServices);
+        setAvailableEmployees(mappedEmployees);
+        setAvailableResources(mappedResources);
+        setSelectedServiceId(mappedServices[0]?.id ?? '');
+      } catch (error) {
+        if (isMounted) {
+          setServices([]);
+          setAvailableEmployees([]);
+          setAvailableResources([]);
+          setSelectedServiceId('');
+          setLoadError(error instanceof Error ? error.message : 'No fue posible cargar la información del negocio.');
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [businessId]);
+
   const [requiresEmployees, setRequiresEmployees] = useState<boolean>(true);
   const [requiresResources, setRequiresResources] = useState<boolean>(true);
-  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<string[]>(['emp-1']);
-  const [selectedResourceIds, setSelectedResourceIds] = useState<string[]>(['res-1']);
+  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<string[]>([]);
+  const [selectedResourceIds, setSelectedResourceIds] = useState<string[]>([]);
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const activeService = services.find(s => s.id === selectedServiceId);
+  const activeService = services.find((service) => service.id === selectedServiceId);
 
-  // Manejador para cambiar de servicio en la lista
+  useEffect(() => {
+    if (!selectedServiceId && services.length > 0) {
+      const firstService = services[0];
+      setSelectedServiceId(firstService.id);
+      const defaults = getAssignmentDefaults(firstService.name);
+      setRequiresEmployees(defaults.requiresEmployees);
+      setRequiresResources(defaults.requiresResources);
+      setSelectedEmployeeIds([]);
+      setSelectedResourceIds([]);
+      return;
+    }
+
+    if (!selectedServiceId || services.length === 0) {
+      setRequiresEmployees(true);
+      setRequiresResources(true);
+      setSelectedEmployeeIds([]);
+      setSelectedResourceIds([]);
+      return;
+    }
+
+    const selectedService = services.find((service) => service.id === selectedServiceId) ?? services[0];
+    const defaults = getAssignmentDefaults(selectedService.name);
+
+    setRequiresEmployees(defaults.requiresEmployees);
+    setRequiresResources(defaults.requiresResources);
+    setSelectedEmployeeIds([]);
+    setSelectedResourceIds([]);
+  }, [selectedServiceId, services]);
+
   const handleSelectService = (serviceId: string) => {
     setSelectedServiceId(serviceId);
     setErrorMessage(null);
     setSuccessMessage(null);
 
-    // Ajuste de dependencias según el ejemplo del CA
-    if (serviceId === 'srv-2') {
-      // Asesoría: Sí Empleados, No Recursos
-      setRequiresEmployees(true);
-      setRequiresResources(false);
-      setSelectedEmployeeIds(['emp-1']);
-      setSelectedResourceIds([]);
-    } else if (serviceId === 'srv-3') {
-      // Uso de cabina/cancha: No Empleados, Sí Recursos
-      setRequiresEmployees(false);
-      setRequiresResources(true);
-      setSelectedEmployeeIds([]);
-      setSelectedResourceIds(['res-3']);
-    } else {
-      // Corte: Sí Empleados, Sí Recursos
-      setRequiresEmployees(true);
-      setRequiresResources(true);
-      setSelectedEmployeeIds(['emp-1', 'emp-2']);
-      setSelectedResourceIds(['res-1', 'res-2']);
-    }
+    const service = services.find((item) => item.id === serviceId);
+    const defaults = getAssignmentDefaults(service?.name ?? '');
+
+    setRequiresEmployees(defaults.requiresEmployees);
+    setRequiresResources(defaults.requiresResources);
+    setSelectedEmployeeIds([]);
+    setSelectedResourceIds([]);
   };
 
-  // Alternar selección de empleado (sin duplicados gracias a Set o filtrado)
   const toggleEmployee = (empId: string) => {
     setSelectedEmployeeIds(prev => 
       prev.includes(empId) ? prev.filter(id => id !== empId) : [...prev, empId]
     );
   };
 
-  // Alternar selección de recurso (sin duplicados)
   const toggleResource = (resId: string) => {
     setSelectedResourceIds(prev => 
       prev.includes(resId) ? prev.filter(id => id !== resId) : [...prev, resId]
@@ -137,9 +260,11 @@ export const ServiceAssignmentScreen: React.FC<ServiceAssignmentScreenProps> = (
 
     if (!validate()) return;
 
+    const assignmentBusinessId = resolveBusinessId() || businessId || '';
+
     const assignment: ServiceAssignment = {
       serviceId: selectedServiceId,
-      businessId,
+      businessId: assignmentBusinessId,
       requiresEmployees,
       requiresResources,
       assignedEmployeeIds: requiresEmployees ? selectedEmployeeIds : [],
@@ -199,31 +324,51 @@ export const ServiceAssignmentScreen: React.FC<ServiceAssignmentScreenProps> = (
               Selecciona el servicio a configurar:
             </p>
 
-            <div className="space-y-2">
-              {services.map((srv) => {
-                const isSelected = srv.id === selectedServiceId;
-                return (
-                  <button
-                    key={srv.id}
-                    type="button"
-                    onClick={() => handleSelectService(srv.id)}
-                    className={`w-full text-left p-3.5 rounded-2xl border transition-all flex items-center justify-between cursor-pointer ${
-                      isSelected
-                        ? 'bg-white border-[var(--color-pompadour)] ring-2 ring-[var(--color-pompadour)]/20 shadow-xs'
-                        : 'bg-white/60 border-[var(--color-dusty-rose)]/70 hover:bg-white'
-                    }`}
-                  >
-                    <div>
-                      <div className="font-bold text-sm text-[var(--color-cacao)]">{srv.name}</div>
-                      <div className="text-[11px] text-[var(--color-cacao)]/60 mt-0.5">
-                        {srv.category} • {srv.durationMinutes} min • ${srv.price.toLocaleString('es-CO')}
+            {isLoading && (
+              <div className="rounded-2xl border border-[var(--color-dusty-rose)] bg-white/60 p-3 text-sm text-[var(--color-cacao)]/70">
+                Cargando servicios del negocio...
+              </div>
+            )}
+
+            {!isLoading && loadError && (
+              <div className="rounded-2xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+                {loadError}
+              </div>
+            )}
+
+            {!isLoading && !loadError && services.length === 0 && (
+              <div className="rounded-2xl border border-[var(--color-dusty-rose)] bg-white/60 p-3 text-sm text-[var(--color-cacao)]/70">
+                No hay servicios registrados para este negocio.
+              </div>
+            )}
+
+            {!isLoading && !loadError && services.length > 0 && (
+              <div className="space-y-2">
+                {services.map((srv) => {
+                  const isSelected = srv.id === selectedServiceId;
+                  return (
+                    <button
+                      key={srv.id}
+                      type="button"
+                      onClick={() => handleSelectService(srv.id)}
+                      className={`w-full text-left p-3.5 rounded-2xl border transition-all flex items-center justify-between cursor-pointer ${
+                        isSelected
+                          ? 'bg-white border-[var(--color-pompadour)] ring-2 ring-[var(--color-pompadour)]/20 shadow-xs'
+                          : 'bg-white/60 border-[var(--color-dusty-rose)]/70 hover:bg-white'
+                      }`}
+                    >
+                      <div>
+                        <div className="font-bold text-sm text-[var(--color-cacao)]">{srv.name}</div>
+                        <div className="text-[11px] text-[var(--color-cacao)]/60 mt-0.5">
+                          {srv.category} • {srv.durationMinutes} min • ${srv.price.toLocaleString('es-CO')}
+                        </div>
                       </div>
-                    </div>
-                    <ChevronRight size={16} className={isSelected ? 'text-[var(--color-pompadour)]' : 'text-stone-400'} />
-                  </button>
-                );
-              })}
-            </div>
+                      <ChevronRight size={16} className={isSelected ? 'text-[var(--color-pompadour)]' : 'text-stone-400'} />
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Columna Derecha: Configuración de Dependencias y Asignaciones */}
