@@ -61,7 +61,7 @@ export default function Login({ onGoRegister, onSuccess }: LoginProps) {
           <div className="w-14 h-14 rounded-2xl bg-[#F7769B]/15 flex items-center justify-center mx-auto mb-4">
             <Lock className="text-[#F7769B]" size={26} strokeWidth={1.5} />
           </div>
-          <h1 className="font-display text-4xl font-semibold text-[#493333] mb-1">Bienvenida</h1>
+          <h1 className="font-display text-4xl font-semibold text-[#493333] mb-1">Bienvenido</h1>
           <p className="text-sm text-[#493333]/60">Ingresa a tu cuenta para continuar</p>
         </div>
 

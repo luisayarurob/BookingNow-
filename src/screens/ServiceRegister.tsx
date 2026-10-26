@@ -41,12 +41,31 @@ export default function ServiceRegister({ businessName, businessCategory, onSucc
   const [serviceCategory, setServiceCategory] = useState("");
   const [duration, setDuration] = useState("");
   const [price, setPrice] = useState("");
-  const [image, setImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  
+  // Modificado: Ahora soporta múltiples imágenes
+  const [images, setImages] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [success, setSuccess] = useState(false);
   const imageRef = useRef<HTMLInputElement>(null);
   const serviceCategories = obtenerCategoriasDeServicio(businessCategory);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      setImages((prev) => [...prev, ...files]);
+      const newPreviews = files.map((file) => URL.createObjectURL(file));
+      setImagePreviews((prev) => [...prev, ...newPreviews]);
+    }
+    // Reseteamos el input para permitir subir el mismo archivo si fue eliminado por error
+    if (imageRef.current) imageRef.current.value = "";
+  };
+
+  const removeImage = (indexToRemove: number) => {
+    setImages((prev) => prev.filter((_, index) => index !== indexToRemove));
+    setImagePreviews((prev) => prev.filter((_, index) => index !== indexToRemove));
+  };
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -72,21 +91,24 @@ export default function ServiceRegister({ businessName, businessCategory, onSucc
     }
 
     try {
-      const imageBase64 = image ? await fileToBase64(image) : undefined;
+      // Modificado: Convertimos todas las imágenes a base64
+      const base64Images = await Promise.all(images.map((img) => fileToBase64(img)));
+      
       const createdService = await createService(businessId, {
         nombre: serviceName.trim(),
         duracionMinutos: Number(duration),
         precio: Number(price),
         descripcion: description.trim(),
         tipoServicio: serviceCategory,
-        imagenReferenciaBase64: imageBase64,
-        imagenesBase64: imageBase64 ? [imageBase64] : [],
+        imagenReferenciaBase64: base64Images[0] || undefined, // La primera es la principal
+        imagenesBase64: base64Images, // Mandamos el arreglo completo para el carrusel
       }, token);
 
-      if (image) {
+      if (images.length > 0) {
         const serviceData = createdService as { idServicio?: number; id?: number };
         const imageKey = String(serviceData.idServicio || serviceData.id || `${businessId}:${serviceName.trim()}`);
-        await saveServiceImage(imageKey, image);
+        // Guardamos localmente la imagen principal
+        await saveServiceImage(imageKey, images[0]);
       }
 
       setErrors({});
@@ -138,7 +160,6 @@ export default function ServiceRegister({ businessName, businessCategory, onSucc
             </div>
           )}
           <form onSubmit={submit} className="flex flex-col gap-5">
-            {/* Locked business field */}
             <Field label="Negocio asociado">
               <div className="flex items-center gap-3 bg-[#FFDDED]/80 border border-[#E6C1C6] rounded-xl px-4 py-3">
                 <div className="w-6 h-6 rounded-full bg-[#F7769B]/20 flex items-center justify-center shrink-0">
@@ -200,38 +221,45 @@ export default function ServiceRegister({ businessName, businessCategory, onSucc
               </Field>
             </div>
 
-            {/* Image */}
-            <Field label="Imagen de referencia">
-              <div
-                onClick={() => imageRef.current?.click()}
-                className="cursor-pointer rounded-xl border-2 border-dashed border-[#E6C1C6] hover:border-[#F7769B] transition-colors overflow-hidden"
-              >
-                {imagePreview ? (
-                  <div className="relative h-40">
-                    <img src={imagePreview} alt="Referencia" className="w-full h-full object-cover" />
+            {/* Selector Múltiple de Imágenes */}
+            <Field label="Imágenes del servicio">
+              <div className="grid grid-cols-3 gap-3">
+                {imagePreviews.map((preview, index) => (
+                  <div key={index} className="relative h-24 rounded-xl border border-[#E6C1C6] overflow-hidden group">
+                    <img src={preview} alt={`Referencia ${index + 1}`} className="w-full h-full object-cover" />
                     <button
                       type="button"
-                      onClick={e => { e.stopPropagation(); setImage(null); setImagePreview(null); }}
-                      className="absolute top-2 right-2 bg-white/80 rounded-full p-1 hover:bg-white"
+                      onClick={(e) => { e.stopPropagation(); removeImage(index); }}
+                      className="absolute top-1 right-1 bg-white/90 rounded-full p-1 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white"
                     >
-                      <X size={14} className="text-[#493333]" />
+                      <X size={14} className="text-red-500" />
                     </button>
+                    {index === 0 && (
+                      <div className="absolute bottom-0 left-0 right-0 bg-[#F7769B]/90 text-white text-[10px] text-center py-0.5 font-medium">
+                        Principal
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <div className="flex flex-col items-center gap-2 py-8 text-[#8D93CB]">
-                    <ImagePlus size={28} strokeWidth={1.5} />
-                    <span className="text-sm">Agregar imagen de referencia</span>
-                    <span className="text-xs opacity-60">Opcional — JPG, PNG, WEBP</span>
-                  </div>
-                )}
+                ))}
+                
+                <div
+                  onClick={() => imageRef.current?.click()}
+                  className="h-24 cursor-pointer rounded-xl border-2 border-dashed border-[#E6C1C6] hover:border-[#F7769B] hover:bg-[#F7769B]/5 transition-colors flex flex-col items-center justify-center text-[#8D93CB]"
+                >
+                  <ImagePlus size={24} strokeWidth={1.5} className="mb-1" />
+                  <span className="text-[10px] font-medium">Añadir foto</span>
+                </div>
               </div>
+
               <input
-                ref={imageRef} type="file" accept="image/*" className="hidden"
-                onChange={e => {
-                  const f = e.target.files?.[0];
-                  if (f) { setImage(f); setImagePreview(URL.createObjectURL(f)); }
-                }}
+                ref={imageRef} 
+                type="file" 
+                accept="image/*" 
+                multiple
+                className="hidden"
+                onChange={handleImageChange}
               />
+              <span className="text-[10px] text-[#493333]/50 mt-1">La primera imagen será la de portada. Opcional — JPG, PNG, WEBP</span>
             </Field>
 
             <button

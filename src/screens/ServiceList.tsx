@@ -1,4 +1,5 @@
-import { Clock, DollarSign, Plus, Scissors, Star } from "lucide-react";
+import { useState } from "react";
+import { Clock, DollarSign, Plus, Scissors, Star, ChevronLeft, ChevronRight } from "lucide-react";
 import type { BusinessWithServices } from "../App";
 import type { BusinessService } from "../services/apiService.ts";
 
@@ -113,21 +114,72 @@ export default function ServiceList({ businesses, onAddService, onAddBusiness }:
 }
 
 function ServiceCard({ service }: { service: BusinessService }) {
-  const image = service.imagenReferencia || service.imagenReferenciaBase64 || service.imagenesBase64?.[0];
+  const [currentImgIndex, setCurrentImgIndex] = useState(0);
+
+  // Extraer todas las imágenes disponibles
+  let images: string[] = [];
+  if (service.imagenesBase64 && service.imagenesBase64.length > 0) {
+    images = service.imagenesBase64;
+  } else if (service.imagenReferenciaBase64 || service.imagenReferencia) {
+    images = [(service.imagenReferenciaBase64 || service.imagenReferencia) as string];
+  }
+
+  const hasMultipleImages = images.length > 1;
+
+  const nextImage = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentImgIndex((prev) => (prev + 1) % images.length);
+  };
+
+  const prevImage = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentImgIndex((prev) => (prev - 1 + images.length) % images.length);
+  };
 
   return (
     <div className="group bg-[#FCF6EF] rounded-2xl border border-[#E6C1C6] overflow-hidden hover:shadow-lg hover:shadow-[#F7769B]/10 hover:-translate-y-1 transition-all duration-200 flex flex-col">
-      <div className="relative h-44 bg-[#FFDDED] overflow-hidden">
-        {image && (
+      <div className="relative h-44 bg-[#FFDDED] overflow-hidden group/carousel">
+        {images.length > 0 && (
           <img
-            src={getServiceImageSrc(image)}
-            alt={service.nombre}
+            src={getServiceImageSrc(images[currentImgIndex])}
+            alt={`${service.nombre} - foto ${currentImgIndex + 1}`}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#493333]/20 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#493333]/20 to-transparent pointer-events-none" />
+        
+        {/* Controles del Carrusel */}
+        {hasMultipleImages && (
+          <>
+            <button
+              onClick={prevImage}
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/80 hover:bg-white text-[#493333] flex items-center justify-center shadow opacity-0 group-hover/carousel:opacity-100 transition-opacity z-10"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <button
+              onClick={nextImage}
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/80 hover:bg-white text-[#493333] flex items-center justify-center shadow opacity-0 group-hover/carousel:opacity-100 transition-opacity z-10"
+            >
+              <ChevronRight size={16} />
+            </button>
+            
+            {/* Puntos indicadores */}
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-10">
+              {images.map((_, idx) => (
+                <div
+                  key={idx}
+                  className={`w-1.5 h-1.5 rounded-full transition-all ${
+                    idx === currentImgIndex ? "bg-white scale-125" : "bg-white/50"
+                  }`}
+                />
+              ))}
+            </div>
+          </>
+        )}
+
         {typeof service.rating === "number" && (
-          <div className="absolute top-3 right-3 flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1">
+          <div className="absolute top-3 right-3 flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 z-10">
             <Star size={11} className="text-[#F7769B] fill-[#F7769B]" />
             <span className="text-xs font-semibold text-[#493333]">{service.rating.toFixed(1)}</span>
           </div>

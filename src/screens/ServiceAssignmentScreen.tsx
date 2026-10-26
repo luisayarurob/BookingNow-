@@ -11,7 +11,7 @@ import {
   Info,
   Building2
 } from 'lucide-react';
-import { listarEmpleados, listarRecursos, listarServicios } from '../services/apiService';
+import { listarEmpleados, listarRecursos, listarServicios, obtenerMiNegocio } from '../services/apiService';
 import { Employee } from '../types/employee';
 import { Resource } from '../types/resource';
 import { ServiceSummary, ServiceAssignment } from '../types/serviceAssignment';
@@ -50,6 +50,10 @@ export const ServiceAssignmentScreen: React.FC<ServiceAssignmentScreenProps> = (
   businessName = 'Mi Negocio Principal',
   onSaved
 }) => {
+  const [businesses, setBusinesses] = useState<{id: string, name: string}[]>([]);
+  const [currentBusinessId, setCurrentBusinessId] = useState<string>('');
+  const [currentBusinessName, setCurrentBusinessName] = useState<string>(businessName);
+
   const [services, setServices] = useState<ServiceSummary[]>([]);
   const [availableEmployees, setAvailableEmployees] = useState<Employee[]>([]);
   const [availableResources, setAvailableResources] = useState<Resource[]>([]);
@@ -57,37 +61,57 @@ export const ServiceAssignmentScreen: React.FC<ServiceAssignmentScreenProps> = (
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  const resolveBusinessId = () => {
-    const stored = localStorage.getItem('idNegocio');
-    const fromStorage = Number(stored ?? 0);
-    const fromProp = Number(businessId ?? 0);
+  const [requiresEmployees, setRequiresEmployees] = useState<boolean>(true);
+  const [requiresResources, setRequiresResources] = useState<boolean>(true);
+  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<string[]>([]);
+  const [selectedResourceIds, setSelectedResourceIds] = useState<string[]>([]);
 
-    if (stored && Number.isFinite(fromStorage) && fromStorage > 0) {
-      return fromStorage;
-    }
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-    if (Number.isFinite(fromProp) && fromProp > 0) {
-      return fromProp;
-    }
-
-    return 0;
-  };
-
+  // 1. Cargar la lista de negocios del usuario
   useEffect(() => {
     let isMounted = true;
+    const loadBusinesses = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      try {
+        const res = await obtenerMiNegocio(token);
+        const bizArray = res.negocios?.length ? res.negocios : (res.negocio ? [res.negocio] : []);
+        const mapped = bizArray.map((b: any) => ({
+          id: String(b.idNegocio || b.id),
+          name: b.nombre || 'Negocio'
+        }));
+        
+        if (isMounted && mapped.length > 0) {
+          setBusinesses(mapped);
+          
+          // Definir negocio activo por defecto
+          const storedId = localStorage.getItem('idNegocio');
+          const activeBiz = mapped.find(m => m.id === storedId) || mapped[0];
+          
+          setCurrentBusinessId(activeBiz.id);
+          setCurrentBusinessName(activeBiz.name);
+          localStorage.setItem('idNegocio', activeBiz.id);
+          localStorage.setItem('nombreNegocio', activeBiz.name);
+        }
+      } catch (error) {
+        console.error("Error cargando negocios:", error);
+      }
+    };
+    loadBusinesses();
+    return () => { isMounted = false; };
+  }, []);
 
+  // 2. Cargar servicios, empleados y recursos cada vez que cambie currentBusinessId
+  useEffect(() => {
+    let isMounted = true;
     const fetchData = async () => {
       const token = localStorage.getItem('token');
-      const activeBusinessId = resolveBusinessId();
-
-      if (!token || !activeBusinessId) {
-        if (isMounted) {
-          setServices([]);
-          setAvailableEmployees([]);
-          setAvailableResources([]);
-          setSelectedServiceId('');
-          setIsLoading(false);
-          setLoadError('No hay un negocio o sesión activa para cargar los servicios.');
+      
+      if (!token || !currentBusinessId) {
+        if (isMounted && currentBusinessId === '') {
+          setIsLoading(true); // Esperando a que cargue el negocio primero
         }
         return;
       }
@@ -98,17 +122,18 @@ export const ServiceAssignmentScreen: React.FC<ServiceAssignmentScreenProps> = (
           setLoadError(null);
         }
 
+        const activeBizNum = Number(currentBusinessId);
         const [serviceRows, employeeRows, resourceRows] = await Promise.all([
-          listarServicios(activeBusinessId, token),
-          listarEmpleados(activeBusinessId, token),
-          listarRecursos(activeBusinessId, token)
+          listarServicios(activeBizNum, token),
+          listarEmpleados(activeBizNum, token),
+          listarRecursos(activeBizNum, token)
         ]);
 
         if (!isMounted) return;
 
         const mappedServices: ServiceSummary[] = serviceRows.map((service) => ({
           id: String(service.id ?? service.idServicio ?? ''),
-          businessId: String(activeBusinessId),
+          businessId: String(activeBizNum),
           name: service.nombre ?? 'Servicio sin nombre',
           category: service.categoria ?? service.descripcion ?? 'General',
           price: Number(service.precio ?? 0),
@@ -117,7 +142,7 @@ export const ServiceAssignmentScreen: React.FC<ServiceAssignmentScreenProps> = (
 
         const mappedEmployees: Employee[] = employeeRows.map((employee) => ({
           id: String(employee.id ?? employee.idEmpleado ?? ''),
-          businessId: String(activeBusinessId),
+          businessId: String(activeBizNum),
           fullName: employee.nombres ?? employee.nombre ?? 'Empleado sin nombre',
           documentId: employee.documento ?? '',
           phone: employee.telefono ?? '',
@@ -128,7 +153,7 @@ export const ServiceAssignmentScreen: React.FC<ServiceAssignmentScreenProps> = (
 
         const mappedResources: Resource[] = resourceRows.map((resource) => ({
           id: String(resource.id ?? resource.idRecurso ?? ''),
-          businessId: String(activeBusinessId),
+          businessId: String(activeBizNum),
           name: resource.nombre ?? 'Recurso sin nombre',
           type: 'OTRO',
           quantity: Number(resource.cantidad ?? 1),
@@ -161,15 +186,7 @@ export const ServiceAssignmentScreen: React.FC<ServiceAssignmentScreenProps> = (
     return () => {
       isMounted = false;
     };
-  }, [businessId]);
-
-  const [requiresEmployees, setRequiresEmployees] = useState<boolean>(true);
-  const [requiresResources, setRequiresResources] = useState<boolean>(true);
-  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<string[]>([]);
-  const [selectedResourceIds, setSelectedResourceIds] = useState<string[]>([]);
-
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  }, [currentBusinessId]);
 
   const activeService = services.find((service) => service.id === selectedServiceId);
 
@@ -228,7 +245,6 @@ export const ServiceAssignmentScreen: React.FC<ServiceAssignmentScreenProps> = (
     );
   };
 
-  // Validación de criterios
   const validate = (): boolean => {
     if (!selectedServiceId) {
       setErrorMessage('Debes seleccionar un servicio.');
@@ -260,11 +276,9 @@ export const ServiceAssignmentScreen: React.FC<ServiceAssignmentScreenProps> = (
 
     if (!validate()) return;
 
-    const assignmentBusinessId = resolveBusinessId() || businessId || '';
-
     const assignment: ServiceAssignment = {
       serviceId: selectedServiceId,
-      businessId: assignmentBusinessId,
+      businessId: currentBusinessId,
       requiresEmployees,
       requiresResources,
       assignedEmployeeIds: requiresEmployees ? selectedEmployeeIds : [],
@@ -278,16 +292,46 @@ export const ServiceAssignmentScreen: React.FC<ServiceAssignmentScreenProps> = (
     setTimeout(() => setSuccessMessage(null), 4000);
   };
 
+  // Manejador del cambio de empresa
+  const handleBusinessChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newId = e.target.value;
+    const biz = businesses.find(b => b.id === newId);
+    if (biz) {
+      setCurrentBusinessId(newId);
+      setCurrentBusinessName(biz.name);
+      localStorage.setItem('idNegocio', newId);
+      localStorage.setItem('nombreNegocio', biz.name);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[var(--color-mimi-pink)]/40 p-4 md:p-8 font-['DM_Sans',sans-serif] text-[var(--color-cacao)]">
       <div className="max-w-6xl mx-auto space-y-6">
         
         {/* Cabecera */}
         <div className="border-b border-[var(--color-dusty-rose)] pb-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--color-cream)] border border-[var(--color-dusty-rose)] text-xs font-medium mb-2 shadow-2xs">
-            <Building2 size={13} className="text-[var(--color-pompadour)]" />
-            <span>{businessName}</span>
+          <div className="inline-flex items-center gap-2 mb-2">
+            {businesses.length > 1 ? (
+              <div className="relative flex items-center bg-[var(--color-cream)] border border-[var(--color-dusty-rose)] rounded-full px-3 py-1 shadow-2xs">
+                <Building2 size={13} className="text-[var(--color-pompadour)]" />
+                <select 
+                  className="bg-transparent text-xs font-medium outline-none ml-1 cursor-pointer text-[var(--color-cacao)] pr-2"
+                  value={currentBusinessId}
+                  onChange={handleBusinessChange}
+                >
+                  {businesses.map(b => (
+                    <option key={b.id} value={b.id}>{b.name}</option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--color-cream)] border border-[var(--color-dusty-rose)] text-xs font-medium shadow-2xs">
+                <Building2 size={13} className="text-[var(--color-pompadour)]" />
+                <span>{currentBusinessName}</span>
+              </div>
+            )}
           </div>
+          
           <h1 className="text-3xl md:text-4xl font-bold font-['Fraunces',serif] text-[var(--color-cacao)]">
             Asignar Empleados y Recursos
           </h1>
@@ -360,7 +404,7 @@ export const ServiceAssignmentScreen: React.FC<ServiceAssignmentScreenProps> = (
                       <div>
                         <div className="font-bold text-sm text-[var(--color-cacao)]">{srv.name}</div>
                         <div className="text-[11px] text-[var(--color-cacao)]/60 mt-0.5">
-                          {srv.category} • {srv.durationMinutes} min • ${srv.price.toLocaleString('es-CO')}
+                          {srv.category} | {srv.durationMinutes} min • ${srv.price.toLocaleString('es-CO')}
                         </div>
                       </div>
                       <ChevronRight size={16} className={isSelected ? 'text-[var(--color-pompadour)]' : 'text-stone-400'} />
@@ -378,174 +422,188 @@ export const ServiceAssignmentScreen: React.FC<ServiceAssignmentScreenProps> = (
               <div>
                 <span className="text-xs font-bold text-[var(--color-pompadour)] uppercase tracking-wider">Configurando Servicio</span>
                 <h3 className="text-xl font-bold font-['Fraunces',serif] text-[var(--color-cacao)]">
-                  {activeService?.name}
+                  {activeService?.name || 'Selecciona un servicio'}
                 </h3>
               </div>
-              <div className="text-xs bg-white px-3 py-1.5 rounded-xl border border-[var(--color-dusty-rose)]">
-                Duración: <strong>{activeService?.durationMinutes} min</strong>
-              </div>
+              {activeService && (
+                <div className="text-xs bg-white px-3 py-1.5 rounded-xl border border-[var(--color-dusty-rose)]">
+                  Duración: <strong>{activeService.durationMinutes} min</strong>
+                </div>
+              )}
             </div>
 
-            <form onSubmit={handleSave} className="space-y-6" noValidate>
-              
-              {/* Dependencias del Servicio (Switches / Toggles) */}
-              <div className="p-4 rounded-2xl bg-white border border-[var(--color-dusty-rose)] space-y-3">
-                <div className="flex items-center gap-2">
-                  <Info size={16} className="text-[var(--color-pompadour)]" />
-                  <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-cacao)]">
-                    Dependencia Operativa del Servicio
-                  </span>
+            {activeService ? (
+              <form onSubmit={handleSave} className="space-y-6" noValidate>
+                
+                {/* Dependencias del Servicio (Switches / Toggles) */}
+                <div className="p-4 rounded-2xl bg-white border border-[var(--color-dusty-rose)] space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Info size={16} className="text-[var(--color-pompadour)]" />
+                    <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-cacao)]">
+                      Dependencia Operativa del Servicio
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    
+                    {/* Switch Empleados */}
+                    <label className="flex items-center justify-between p-3 rounded-xl border border-[var(--color-dusty-rose)]/70 hover:bg-[var(--color-mimi-pink)]/20 cursor-pointer transition-colors">
+                      <div className="flex items-center gap-2.5">
+                        <Users size={16} className="text-[var(--color-pompadour)]" />
+                        <div>
+                          <div className="text-xs font-bold text-[var(--color-cacao)]">¿Requiere Empleados?</div>
+                          <div className="text-[10px] text-[var(--color-cacao)]/60">Asignar personal que preste el servicio</div>
+                        </div>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={requiresEmployees}
+                        onChange={(e) => {
+                          setRequiresEmployees(e.target.checked);
+                          if (!e.target.checked) setSelectedEmployeeIds([]);
+                        }}
+                        className="w-4 h-4 accent-[var(--color-pompadour)] cursor-pointer"
+                      />
+                    </label>
+
+                    {/* Switch Recursos */}
+                    <label className="flex items-center justify-between p-3 rounded-xl border border-[var(--color-dusty-rose)]/70 hover:bg-[var(--color-mimi-pink)]/20 cursor-pointer transition-colors">
+                      <div className="flex items-center gap-2.5">
+                        <Boxes size={16} className="text-[var(--color-pompadour)]" />
+                        <div>
+                          <div className="text-xs font-bold text-[var(--color-cacao)]">¿Requiere Recursos?</div>
+                          <div className="text-[10px] text-[var(--color-cacao)]/60">Cabinas, sillas, máquinas o kits</div>
+                        </div>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={requiresResources}
+                        onChange={(e) => {
+                          setRequiresResources(e.target.checked);
+                          if (!e.target.checked) setSelectedResourceIds([]);
+                        }}
+                        className="w-4 h-4 accent-[var(--color-pompadour)] cursor-pointer"
+                      />
+                    </label>
+
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                  
-                  {/* Switch Empleados */}
-                  <label className="flex items-center justify-between p-3 rounded-xl border border-[var(--color-dusty-rose)]/70 hover:bg-[var(--color-mimi-pink)]/20 cursor-pointer transition-colors">
-                    <div className="flex items-center gap-2.5">
-                      <Users size={16} className="text-[var(--color-pompadour)]" />
-                      <div>
-                        <div className="text-xs font-bold text-[var(--color-cacao)]">¿Requiere Empleados?</div>
-                        <div className="text-[10px] text-[var(--color-cacao)]/60">Asignar personal que preste el servicio</div>
+                {/* Sección Asignar Empleados */}
+                {requiresEmployees && (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Users size={18} className="text-[var(--color-pompadour)]" />
+                        <h4 className="font-bold text-sm font-['Fraunces',serif]">
+                          Empleados Asignados ({selectedEmployeeIds.length})
+                        </h4>
                       </div>
+                      <span className="text-[11px] text-[var(--color-cacao)]/60">
+                        Solo empleados de {currentBusinessName}
+                      </span>
                     </div>
-                    <input
-                      type="checkbox"
-                      checked={requiresEmployees}
-                      onChange={(e) => {
-                        setRequiresEmployees(e.target.checked);
-                        if (!e.target.checked) setSelectedEmployeeIds([]);
-                      }}
-                      className="w-4 h-4 accent-[var(--color-pompadour)] cursor-pointer"
-                    />
-                  </label>
 
-                  {/* Switch Recursos */}
-                  <label className="flex items-center justify-between p-3 rounded-xl border border-[var(--color-dusty-rose)]/70 hover:bg-[var(--color-mimi-pink)]/20 cursor-pointer transition-colors">
-                    <div className="flex items-center gap-2.5">
-                      <Boxes size={16} className="text-[var(--color-pompadour)]" />
-                      <div>
-                        <div className="text-xs font-bold text-[var(--color-cacao)]">¿Requiere Recursos?</div>
-                        <div className="text-[10px] text-[var(--color-cacao)]/60">Cabinas, sillas, máquinas o kits</div>
+                    {availableEmployees.length === 0 ? (
+                      <div className="text-xs text-[var(--color-cacao)]/70 italic py-2">No hay empleados registrados en este negocio.</div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        {availableEmployees.map((emp) => {
+                          const isAssigned = selectedEmployeeIds.includes(emp.id);
+                          return (
+                            <div
+                              key={emp.id}
+                              onClick={() => toggleEmployee(emp.id)}
+                              className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${
+                                isAssigned
+                                  ? 'bg-white border-[var(--color-pompadour)] ring-1 ring-[var(--color-pompadour)] shadow-2xs'
+                                  : 'bg-white/60 border-[var(--color-dusty-rose)]/80 hover:bg-white'
+                              }`}
+                            >
+                              <div className="truncate pr-2">
+                                <div className="text-xs font-bold text-[var(--color-cacao)] truncate">{emp.fullName}</div>
+                                <div className="text-[11px] text-[var(--color-cacao)]/60">CC: {emp.documentId}</div>
+                              </div>
+                              <div className={`w-5 h-5 rounded-md flex items-center justify-center border shrink-0 ${
+                                isAssigned
+                                  ? 'bg-[var(--color-pompadour)] border-[var(--color-pompadour)] text-white'
+                                  : 'border-[var(--color-dusty-rose)] bg-white text-transparent'
+                              }`}>
+                                <Check size={12} />
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={requiresResources}
-                      onChange={(e) => {
-                        setRequiresResources(e.target.checked);
-                        if (!e.target.checked) setSelectedResourceIds([]);
-                      }}
-                      className="w-4 h-4 accent-[var(--color-pompadour)] cursor-pointer"
-                    />
-                  </label>
+                    )}
+                  </div>
+                )}
 
-                </div>
+                {/* Sección Asignar Recursos */}
+                {requiresResources && (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Boxes size={18} className="text-[var(--color-pompadour)]" />
+                        <h4 className="font-bold text-sm font-['Fraunces',serif]">
+                          Recursos Asignados ({selectedResourceIds.length})
+                        </h4>
+                      </div>
+                      <span className="text-[11px] text-[var(--color-cacao)]/60">
+                        Solo recursos de {currentBusinessName}
+                      </span>
+                    </div>
+
+                    {availableResources.length === 0 ? (
+                      <div className="text-xs text-[var(--color-cacao)]/70 italic py-2">No hay recursos registrados en este negocio.</div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        {availableResources.map((res) => {
+                          const isAssigned = selectedResourceIds.includes(res.id);
+                          return (
+                            <div
+                              key={res.id}
+                              onClick={() => toggleResource(res.id)}
+                              className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${
+                                isAssigned
+                                  ? 'bg-white border-[var(--color-pompadour)] ring-1 ring-[var(--color-pompadour)] shadow-2xs'
+                                  : 'bg-white/60 border-[var(--color-dusty-rose)]/80 hover:bg-white'
+                              }`}
+                            >
+                              <div className="truncate pr-2">
+                                <div className="text-xs font-bold text-[var(--color-cacao)] truncate">{res.name}</div>
+                                <div className="text-[10px] text-[var(--color-cacao)]/60 font-semibold uppercase">{res.type} | Cant: {res.quantity}</div>
+                              </div>
+                              <div className={`w-5 h-5 rounded-md flex items-center justify-center border shrink-0 ${
+                                isAssigned
+                                  ? 'bg-[var(--color-pompadour)] border-[var(--color-pompadour)] text-white'
+                                  : 'border-[var(--color-dusty-rose)] bg-white text-transparent'
+                              }`}>
+                                <Check size={12} />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Botón Guardar Asignación */}
+                <button
+                  type="submit"
+                  className="w-full py-3 px-6 rounded-2xl bg-[var(--color-pompadour)] hover:opacity-90 text-white font-bold text-sm tracking-wide shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
+                >
+                  <Save size={18} />
+                  Guardar Asignaciones del Servicio
+                </button>
+              </form>
+            ) : (
+              <div className="flex items-center justify-center h-48 text-[var(--color-cacao)]/50 text-sm">
+                Selecciona un servicio de la lista para configurarlo.
               </div>
-
-              {/* Sección Asignar Empleados */}
-              {requiresEmployees && (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Users size={18} className="text-[var(--color-pompadour)]" />
-                      <h4 className="font-bold text-sm font-['Fraunces',serif]">
-                        Empleados Asignados ({selectedEmployeeIds.length})
-                      </h4>
-                    </div>
-                    <span className="text-[11px] text-[var(--color-cacao)]/60">
-                      Solo empleados de {businessName}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    {availableEmployees.map((emp) => {
-                      const isAssigned = selectedEmployeeIds.includes(emp.id);
-                      return (
-                        <div
-                          key={emp.id}
-                          onClick={() => toggleEmployee(emp.id)}
-                          className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${
-                            isAssigned
-                              ? 'bg-white border-[var(--color-pompadour)] ring-1 ring-[var(--color-pompadour)] shadow-2xs'
-                              : 'bg-white/60 border-[var(--color-dusty-rose)]/80 hover:bg-white'
-                          }`}
-                        >
-                          <div className="truncate pr-2">
-                            <div className="text-xs font-bold text-[var(--color-cacao)] truncate">{emp.fullName}</div>
-                            <div className="text-[11px] text-[var(--color-cacao)]/60">CC: {emp.documentId}</div>
-                          </div>
-                          <div className={`w-5 h-5 rounded-md flex items-center justify-center border shrink-0 ${
-                            isAssigned
-                              ? 'bg-[var(--color-pompadour)] border-[var(--color-pompadour)] text-white'
-                              : 'border-[var(--color-dusty-rose)] bg-white text-transparent'
-                          }`}>
-                            <Check size={12} />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Sección Asignar Recursos */}
-              {requiresResources && (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Boxes size={18} className="text-[var(--color-pompadour)]" />
-                      <h4 className="font-bold text-sm font-['Fraunces',serif]">
-                        Recursos Asignados ({selectedResourceIds.length})
-                      </h4>
-                    </div>
-                    <span className="text-[11px] text-[var(--color-cacao)]/60">
-                      Solo recursos de {businessName}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    {availableResources.map((res) => {
-                      const isAssigned = selectedResourceIds.includes(res.id);
-                      return (
-                        <div
-                          key={res.id}
-                          onClick={() => toggleResource(res.id)}
-                          className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${
-                            isAssigned
-                              ? 'bg-white border-[var(--color-pompadour)] ring-1 ring-[var(--color-pompadour)] shadow-2xs'
-                              : 'bg-white/60 border-[var(--color-dusty-rose)]/80 hover:bg-white'
-                          }`}
-                        >
-                          <div className="truncate pr-2">
-                            <div className="text-xs font-bold text-[var(--color-cacao)] truncate">{res.name}</div>
-                            <div className="text-[10px] text-[var(--color-cacao)]/60 font-semibold uppercase">{res.type} • Cant: {res.quantity}</div>
-                          </div>
-                          <div className={`w-5 h-5 rounded-md flex items-center justify-center border shrink-0 ${
-                            isAssigned
-                              ? 'bg-[var(--color-pompadour)] border-[var(--color-pompadour)] text-white'
-                              : 'border-[var(--color-dusty-rose)] bg-white text-transparent'
-                          }`}>
-                            <Check size={12} />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Botón Guardar Asignación */}
-              <button
-                type="submit"
-                className="w-full py-3 px-6 rounded-2xl bg-[var(--color-pompadour)] hover:opacity-90 text-white font-bold text-sm tracking-wide shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
-              >
-                <Save size={18} />
-                Guardar Asignaciones del Servicio
-              </button>
-            </form>
-
+            )}
           </div>
-
         </div>
       </div>
     </div>
