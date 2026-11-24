@@ -21,7 +21,7 @@ export default function DemoNav({ screen, onNavigate }: DemoNavProps) {
           onClick={() => onNavigate(s.id)}
           className={`px-3 py-1 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
             screen === s.id
-              ? "bg-[var(--color-pompadour)] text-white shadow-xs"
+              ? "bg-[var(--color-pompadour-ink)] text-white shadow-xs"
               : "text-[var(--color-cacao)]/75 hover:bg-[var(--color-mimi-pink)]/40 hover:text-[var(--color-cacao)]"
           }`}
         >

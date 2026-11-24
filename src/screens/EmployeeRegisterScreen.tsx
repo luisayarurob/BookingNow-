@@ -185,7 +185,7 @@ export const EmployeeRegisterScreen: React.FC<EmployeeRegisterScreenProps> = ({
         {/* Encabezado */}
         <div className="border-b border-[var(--color-dusty-rose)] pb-5">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--color-cream)] border border-[var(--color-dusty-rose)] text-xs font-medium text-[var(--color-cacao)] mb-2 shadow-xs">
-            <Building2 size={14} className="text-[var(--color-pompadour)]" />
+            <Building2 size={14} className="text-[var(--color-pompadour-ink)]" />
             Negocio asociado: <span className="font-bold">{businessName}</span>
           </div>
           <h1 className="text-3xl md:text-4xl font-bold font-['Fraunces',serif] text-[var(--color-cacao)]">
@@ -216,12 +216,12 @@ export const EmployeeRegisterScreen: React.FC<EmployeeRegisterScreenProps> = ({
           {/* Formulario de Registro */}
           <div className="lg:col-span-6 bg-[var(--color-cream)] border border-[var(--color-dusty-rose)] rounded-3xl p-6 md:p-8 shadow-sm">
             <div className="flex items-center gap-2.5 mb-6">
-              <div className="p-2.5 rounded-xl bg-[var(--color-pompadour)] text-white shadow-xs">
+              <div className="p-2.5 rounded-xl bg-[var(--color-pompadour-ink)] text-white shadow-xs">
                 <UserPlus size={20} />
               </div>
               <div>
                 <h2 className="text-xl font-bold font-['Fraunces',serif]">Datos del Empleado</h2>
-                <p className="text-xs text-[var(--color-cacao)]/70">Todos los campos marcados con (*) son obligatorios</p>
+                <p className="text-xs text-[var(--color-cacao)]/80">Todos los campos marcados con (*) son obligatorios</p>
               </div>
             </div>
 
@@ -230,10 +230,10 @@ export const EmployeeRegisterScreen: React.FC<EmployeeRegisterScreenProps> = ({
               {/* Nombres y Apellidos */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider mb-1.5 text-[var(--color-cacao)]">
-                  Nombres y apellidos completos <span className="text-[var(--color-pompadour)]">*</span>
+                  Nombres y apellidos completos <span className="text-[var(--color-pompadour-ink)]">*</span>
                 </label>
                 <div className="relative">
-                  <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-cacao)]/50" />
+                  <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-cacao)]/80" />
                   <input
                     type="text"
                     name="fullName"
@@ -243,7 +243,7 @@ export const EmployeeRegisterScreen: React.FC<EmployeeRegisterScreenProps> = ({
                     className={`w-full pl-10 pr-4 py-2.5 rounded-xl bg-white border text-sm transition-all focus:outline-none focus:ring-2 ${
                       errors.fullName 
                         ? 'border-rose-400 focus:ring-rose-200' 
-                        : 'border-[var(--color-dusty-rose)] focus:border-[var(--color-pompadour)] focus:ring-[var(--color-pompadour)]/20'
+                        : 'border-[var(--color-dusty-rose)] focus:border-[var(--color-pompadour-ink)] focus:ring-[var(--color-pompadour)]/20'
                     }`}
                   />
                 </div>
@@ -257,10 +257,10 @@ export const EmployeeRegisterScreen: React.FC<EmployeeRegisterScreenProps> = ({
               {/* Documento de Identidad (CC) */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider mb-1.5 text-[var(--color-cacao)]">
-                  Documento de Identidad (CC) <span className="text-[var(--color-pompadour)]">*</span>
+                  Documento de Identidad (CC) <span className="text-[var(--color-pompadour-ink)]">*</span>
                 </label>
                 <div className="relative">
-                  <IdCard size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-cacao)]/50" />
+                  <IdCard size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-cacao)]/80" />
                   <input
                     type="text"
                     name="documentId"
@@ -270,7 +270,7 @@ export const EmployeeRegisterScreen: React.FC<EmployeeRegisterScreenProps> = ({
                     className={`w-full pl-10 pr-4 py-2.5 rounded-xl bg-white border text-sm transition-all focus:outline-none focus:ring-2 ${
                       errors.documentId 
                         ? 'border-rose-400 focus:ring-rose-200' 
-                        : 'border-[var(--color-dusty-rose)] focus:border-[var(--color-pompadour)] focus:ring-[var(--color-pompadour)]/20'
+                        : 'border-[var(--color-dusty-rose)] focus:border-[var(--color-pompadour-ink)] focus:ring-[var(--color-pompadour)]/20'
                     }`}
                   />
                 </div>
@@ -284,10 +284,10 @@ export const EmployeeRegisterScreen: React.FC<EmployeeRegisterScreenProps> = ({
               {/* Teléfono */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider mb-1.5 text-[var(--color-cacao)]">
-                  Teléfono de contacto <span className="text-[var(--color-pompadour)]">*</span>
+                  Teléfono de contacto <span className="text-[var(--color-pompadour-ink)]">*</span>
                 </label>
                 <div className="relative">
-                  <Phone size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-cacao)]/50" />
+                  <Phone size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-cacao)]/80" />
                   <input
                     type="tel"
                     name="phone"
@@ -297,7 +297,7 @@ export const EmployeeRegisterScreen: React.FC<EmployeeRegisterScreenProps> = ({
                     className={`w-full pl-10 pr-4 py-2.5 rounded-xl bg-white border text-sm transition-all focus:outline-none focus:ring-2 ${
                       errors.phone 
                         ? 'border-rose-400 focus:ring-rose-200' 
-                        : 'border-[var(--color-dusty-rose)] focus:border-[var(--color-pompadour)] focus:ring-[var(--color-pompadour)]/20'
+                        : 'border-[var(--color-dusty-rose)] focus:border-[var(--color-pompadour-ink)] focus:ring-[var(--color-pompadour)]/20'
                     }`}
                   />
                 </div>
@@ -311,10 +311,10 @@ export const EmployeeRegisterScreen: React.FC<EmployeeRegisterScreenProps> = ({
               {/* Correo Electrónico */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider mb-1.5 text-[var(--color-cacao)]">
-                  Correo electrónico <span className="text-[var(--color-pompadour)]">*</span>
+                  Correo electrónico <span className="text-[var(--color-pompadour-ink)]">*</span>
                 </label>
                 <div className="relative">
-                  <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-cacao)]/50" />
+                  <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-cacao)]/80" />
                   <input
                     type="email"
                     name="email"
@@ -324,7 +324,7 @@ export const EmployeeRegisterScreen: React.FC<EmployeeRegisterScreenProps> = ({
                     className={`w-full pl-10 pr-4 py-2.5 rounded-xl bg-white border text-sm transition-all focus:outline-none focus:ring-2 ${
                       errors.email 
                         ? 'border-rose-400 focus:ring-rose-200' 
-                        : 'border-[var(--color-dusty-rose)] focus:border-[var(--color-pompadour)] focus:ring-[var(--color-pompadour)]/20'
+                        : 'border-[var(--color-dusty-rose)] focus:border-[var(--color-pompadour-ink)] focus:ring-[var(--color-pompadour)]/20'
                     }`}
                   />
                 </div>
@@ -339,7 +339,7 @@ export const EmployeeRegisterScreen: React.FC<EmployeeRegisterScreenProps> = ({
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full mt-2 py-3 px-6 rounded-2xl bg-[var(--color-pompadour)] hover:opacity-90 text-white font-bold text-sm tracking-wide shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] disabled:opacity-50"
+                className="w-full mt-2 py-3 px-6 rounded-2xl bg-[var(--color-pompadour-ink)] hover:opacity-90 text-white font-bold text-sm tracking-wide shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] disabled:opacity-50"
               >
                 {loading ? <Loader2 size={18} className="animate-spin" /> : <UserPlus size={18} />}
                 {loading ? 'Guardando...' : 'Guardar Empleado'}
@@ -351,16 +351,16 @@ export const EmployeeRegisterScreen: React.FC<EmployeeRegisterScreenProps> = ({
           <div className="lg:col-span-6 space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Users size={20} className="text-[var(--color-pompadour)]" />
+                <Users size={20} className="text-[var(--color-pompadour-ink)]" />
                 <h2 className="text-xl font-bold font-['Fraunces',serif]">
                   Equipo de Trabajo ({employeesList.length})
                 </h2>
               </div>
-              {fetchingList && <Loader2 size={16} className="animate-spin text-[var(--color-pompadour)]" />}
+              {fetchingList && <Loader2 size={16} className="animate-spin text-[var(--color-pompadour-ink)]" />}
             </div>
 
             {employeesList.length === 0 && !fetchingList ? (
-              <div className="bg-[var(--color-cream)] border border-dashed border-[var(--color-dusty-rose)] rounded-3xl p-8 text-center text-[var(--color-cacao)]/60 space-y-2">
+              <div className="bg-[var(--color-cream)] border border-dashed border-[var(--color-dusty-rose)] rounded-3xl p-8 text-center text-[var(--color-cacao)]/80 space-y-2">
                 <Users size={36} className="mx-auto text-[var(--color-dusty-rose)]" />
                 <p className="font-medium text-sm">No hay empleados registrados aún</p>
                 <p className="text-xs">Usa el formulario para añadir colaboradores.</p>
@@ -374,7 +374,7 @@ export const EmployeeRegisterScreen: React.FC<EmployeeRegisterScreenProps> = ({
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-full bg-[var(--color-pompadour)]/20 text-[var(--color-pompadour)] flex items-center justify-center font-bold text-sm shrink-0 uppercase">
+                        <div className="w-10 h-10 rounded-full bg-[var(--color-pompadour-ink)]/20 text-[var(--color-pompadour-ink)] flex items-center justify-center font-bold text-sm shrink-0 uppercase">
                           {emp.nombres ? emp.nombres.slice(0, 2) : 'EM'}
                         </div>
                         <div>
@@ -382,7 +382,7 @@ export const EmployeeRegisterScreen: React.FC<EmployeeRegisterScreenProps> = ({
                             {emp.nombres}
                           </h3>
                           <div className="flex items-center gap-1.5 text-xs text-[var(--color-cacao)]/75 mt-0.5">
-                            <ShieldCheck size={14} className="text-[var(--color-pompadour)]" />
+                            <ShieldCheck size={14} className="text-[var(--color-pompadour-ink)]" />
                             <span>CC: {emp.documento}</span>
                           </div>
                         </div>
@@ -396,11 +396,11 @@ export const EmployeeRegisterScreen: React.FC<EmployeeRegisterScreenProps> = ({
 
                     <div className="mt-3.5 pt-3 border-t border-[var(--color-dusty-rose)]/60 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-[var(--color-cacao)]/80">
                       <div className="flex items-center gap-2">
-                        <Phone size={13} className="text-[var(--color-cacao)]/60" />
+                        <Phone size={13} className="text-[var(--color-cacao)]/80" />
                         <span>{emp.telefono}</span>
                       </div>
                       <div className="flex items-center gap-2 truncate">
-                        <Mail size={13} className="text-[var(--color-cacao)]/60" />
+                        <Mail size={13} className="text-[var(--color-cacao)]/80" />
                         <span className="truncate" title={emp.correo}>{emp.correo}</span>
                       </div>
                     </div>

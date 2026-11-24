@@ -175,7 +175,7 @@ export const ResourceRegister: React.FC<ResourceRegisterProps> = ({
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[var(--color-dusty-rose)] pb-5">
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--color-cream)] border border-[var(--color-dusty-rose)] text-xs font-medium text-[var(--color-cacao)] mb-2 shadow-xs">
-              <Boxes size={14} className="text-[var(--color-pompadour)]" />
+              <Boxes size={14} className="text-[var(--color-pompadour-ink)]" />
               Negocio: <span className="font-bold">{businessName}</span>
             </div>
             <h1 className="text-3xl md:text-4xl font-bold font-['Fraunces',serif] text-[var(--color-cacao)]">
@@ -208,12 +208,12 @@ export const ResourceRegister: React.FC<ResourceRegisterProps> = ({
           {/* Formulario */}
           <div className="lg:col-span-6 bg-[var(--color-cream)] border border-[var(--color-dusty-rose)] rounded-3xl p-6 md:p-8 shadow-sm">
             <div className="flex items-center gap-2 mb-6">
-              <div className="p-2.5 rounded-xl bg-[var(--color-pompadour)] text-white shadow-xs">
+              <div className="p-2.5 rounded-xl bg-[var(--color-pompadour-ink)] text-white shadow-xs">
                 <Package size={20} />
               </div>
               <div>
                 <h2 className="text-xl font-bold font-['Fraunces',serif]">Nuevo Recurso</h2>
-                <p className="text-xs text-[var(--color-cacao)]/70">Completa todos los campos obligatorios (*)</p>
+                <p className="text-xs text-[var(--color-cacao)]/80">Completa todos los campos obligatorios (*)</p>
               </div>
             </div>
 
@@ -222,7 +222,7 @@ export const ResourceRegister: React.FC<ResourceRegisterProps> = ({
               {/* Nombre */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider mb-1.5 text-[var(--color-cacao)]">
-                  Nombre del recurso <span className="text-[var(--color-pompadour)]">*</span>
+                  Nombre del recurso <span className="text-[var(--color-pompadour-ink)]">*</span>
                 </label>
                 <input
                   type="text"
@@ -235,7 +235,7 @@ export const ResourceRegister: React.FC<ResourceRegisterProps> = ({
                   className={`w-full px-4 py-2.5 rounded-xl bg-white border text-sm transition-all focus:outline-none focus:ring-2 ${
                     errors.nombre 
                       ? 'border-rose-400 focus:ring-rose-200' 
-                      : 'border-[var(--color-dusty-rose)] focus:border-[var(--color-pompadour)] focus:ring-[var(--color-pompadour)]/20'
+                      : 'border-[var(--color-dusty-rose)] focus:border-[var(--color-pompadour-ink)] focus:ring-[var(--color-pompadour)]/20'
                   }`}
                 />
                 {errors.nombre && (
@@ -248,7 +248,7 @@ export const ResourceRegister: React.FC<ResourceRegisterProps> = ({
               {/* Cantidad */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider mb-1.5 text-[var(--color-cacao)]">
-                  Cantidad disponible <span className="text-[var(--color-pompadour)]">*</span>
+                  Cantidad disponible <span className="text-[var(--color-pompadour-ink)]">*</span>
                 </label>
                 <input
                   type="number"
@@ -262,7 +262,7 @@ export const ResourceRegister: React.FC<ResourceRegisterProps> = ({
                   className={`w-full px-4 py-2.5 rounded-xl bg-white border text-sm transition-all focus:outline-none focus:ring-2 ${
                     errors.cantidad 
                       ? 'border-rose-400 focus:ring-rose-200' 
-                      : 'border-[var(--color-dusty-rose)] focus:border-[var(--color-pompadour)] focus:ring-[var(--color-pompadour)]/20'
+                      : 'border-[var(--color-dusty-rose)] focus:border-[var(--color-pompadour-ink)] focus:ring-[var(--color-pompadour)]/20'
                   }`}
                 />
                 {errors.cantidad && (
@@ -275,7 +275,7 @@ export const ResourceRegister: React.FC<ResourceRegisterProps> = ({
               {/* Estado */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider mb-1.5 text-[var(--color-cacao)]">
-                  Estado actual <span className="text-[var(--color-pompadour)]">*</span>
+                  Estado actual <span className="text-[var(--color-pompadour-ink)]">*</span>
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   {['DISPONIBLE', 'MANTENIMIENTO', 'NO_DISPONIBLE'].map((item) => (
@@ -285,7 +285,7 @@ export const ResourceRegister: React.FC<ResourceRegisterProps> = ({
                       onClick={() => setEstado(item)}
                       className={`py-2 px-2 text-xs font-semibold rounded-xl border transition-all text-center ${
                         estado === item
-                          ? 'bg-[var(--color-pompadour)] text-white border-[var(--color-pompadour)] shadow-xs scale-[1.02]'
+                          ? 'bg-[var(--color-pompadour-ink)] text-white border-[var(--color-pompadour-ink)] shadow-xs scale-[1.02]'
                           : 'bg-white text-[var(--color-cacao)]/80 border-[var(--color-dusty-rose)] hover:bg-[var(--color-mimi-pink)]/30'
                       }`}
                     >
@@ -300,7 +300,7 @@ export const ResourceRegister: React.FC<ResourceRegisterProps> = ({
               {/* Descripción */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider mb-1.5 text-[var(--color-cacao)]">
-                  Descripción / Observaciones <span className="text-[var(--color-pompadour)]">*</span>
+                  Descripción / Observaciones <span className="text-[var(--color-pompadour-ink)]">*</span>
                 </label>
                 <textarea
                   rows={3}
@@ -313,7 +313,7 @@ export const ResourceRegister: React.FC<ResourceRegisterProps> = ({
                   className={`w-full px-4 py-2.5 rounded-xl bg-white border text-sm transition-all focus:outline-none focus:ring-2 resize-none ${
                     errors.descripcion 
                       ? 'border-rose-400 focus:ring-rose-200' 
-                      : 'border-[var(--color-dusty-rose)] focus:border-[var(--color-pompadour)] focus:ring-[var(--color-pompadour)]/20'
+                      : 'border-[var(--color-dusty-rose)] focus:border-[var(--color-pompadour-ink)] focus:ring-[var(--color-pompadour)]/20'
                   }`}
                 />
                 {errors.descripcion && (
@@ -327,7 +327,7 @@ export const ResourceRegister: React.FC<ResourceRegisterProps> = ({
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 px-6 rounded-2xl bg-[var(--color-pompadour)] hover:opacity-90 text-white font-bold text-sm tracking-wide shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] disabled:opacity-50"
+                className="w-full py-3 px-6 rounded-2xl bg-[var(--color-pompadour-ink)] hover:opacity-90 text-white font-bold text-sm tracking-wide shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] disabled:opacity-50"
               >
                 {loading ? <Loader2 size={18} className="animate-spin" /> : <PlusCircle size={18} />}
                 {loading ? 'Guardando...' : 'Guardar Recurso'}
@@ -339,16 +339,16 @@ export const ResourceRegister: React.FC<ResourceRegisterProps> = ({
           <div className="lg:col-span-6 space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Layers size={20} className="text-[var(--color-pompadour)]" />
+                <Layers size={20} className="text-[var(--color-pompadour-ink)]" />
                 <h2 className="text-xl font-bold font-['Fraunces',serif]">
                   Recursos del Negocio ({resourcesList.length})
                 </h2>
               </div>
-              {fetchingList && <Loader2 size={16} className="animate-spin text-[var(--color-pompadour)]" />}
+              {fetchingList && <Loader2 size={16} className="animate-spin text-[var(--color-pompadour-ink)]" />}
             </div>
 
             {resourcesList.length === 0 && !fetchingList ? (
-              <div className="bg-[var(--color-cream)] border border-dashed border-[var(--color-dusty-rose)] rounded-3xl p-8 text-center text-[var(--color-cacao)]/60 space-y-2">
+              <div className="bg-[var(--color-cream)] border border-dashed border-[var(--color-dusty-rose)] rounded-3xl p-8 text-center text-[var(--color-cacao)]/80 space-y-2">
                 <Package size={36} className="mx-auto text-[var(--color-dusty-rose)]" />
                 <p className="font-medium text-sm">Aún no hay recursos dados de alta</p>
                 <p className="text-xs">Usa el formulario para añadir el primero.</p>
@@ -378,11 +378,11 @@ export const ResourceRegister: React.FC<ResourceRegisterProps> = ({
 
                     <div className="mt-4 pt-3 border-t border-[var(--color-dusty-rose)]/60 flex items-center justify-between text-xs text-[var(--color-cacao)]/75">
                       <div className="flex items-center gap-1.5 font-medium">
-                        <Boxes size={14} className="text-[var(--color-pompadour)]" />
+                        <Boxes size={14} className="text-[var(--color-pompadour-ink)]" />
                         <span>Cantidad: <strong className="text-[var(--color-cacao)]">{res.cantidad}</strong></span>
                       </div>
                       {res.fechaCreacion && (
-                        <div className="flex items-center gap-1 text-[11px] text-[var(--color-cacao)]/60">
+                        <div className="flex items-center gap-1 text-[11px] text-[var(--color-cacao)]/80">
                           <Clock size={12} />
                           <span>{res.fechaCreacion}</span>
                         </div>

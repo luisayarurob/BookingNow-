@@ -12,6 +12,7 @@ import {
   Building2
 } from 'lucide-react';
 import { listarEmpleados, listarRecursos, listarServicios, obtenerMiNegocio } from '../services/apiService';
+import type { Business } from '../services/apiService';
 import { Employee } from '../types/employee';
 import { Resource } from '../types/resource';
 import { ServiceSummary, ServiceAssignment } from '../types/serviceAssignment';
@@ -78,7 +79,7 @@ export const ServiceAssignmentScreen: React.FC<ServiceAssignmentScreenProps> = (
       try {
         const res = await obtenerMiNegocio(token);
         const bizArray = res.negocios?.length ? res.negocios : (res.negocio ? [res.negocio] : []);
-        const mapped = bizArray.map((b: any) => ({
+        const mapped: { id: string; name: string }[] = bizArray.map((b: Business) => ({
           id: String(b.idNegocio || b.id),
           name: b.nombre || 'Negocio'
         }));
@@ -313,7 +314,7 @@ export const ServiceAssignmentScreen: React.FC<ServiceAssignmentScreenProps> = (
           <div className="inline-flex items-center gap-2 mb-2">
             {businesses.length > 1 ? (
               <div className="relative flex items-center bg-[var(--color-cream)] border border-[var(--color-dusty-rose)] rounded-full px-3 py-1 shadow-2xs">
-                <Building2 size={13} className="text-[var(--color-pompadour)]" />
+                <Building2 size={13} className="text-[var(--color-pompadour-ink)]" />
                 <select 
                   className="bg-transparent text-xs font-medium outline-none ml-1 cursor-pointer text-[var(--color-cacao)] pr-2"
                   value={currentBusinessId}
@@ -326,7 +327,7 @@ export const ServiceAssignmentScreen: React.FC<ServiceAssignmentScreenProps> = (
               </div>
             ) : (
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--color-cream)] border border-[var(--color-dusty-rose)] text-xs font-medium shadow-2xs">
-                <Building2 size={13} className="text-[var(--color-pompadour)]" />
+                <Building2 size={13} className="text-[var(--color-pompadour-ink)]" />
                 <span>{currentBusinessName}</span>
               </div>
             )}
@@ -360,16 +361,16 @@ export const ServiceAssignmentScreen: React.FC<ServiceAssignmentScreenProps> = (
           {/* Columna Izquierda: Selector de Servicio */}
           <div className="lg:col-span-4 bg-[var(--color-cream)] border border-[var(--color-dusty-rose)] rounded-3xl p-5 shadow-xs space-y-4">
             <div className="flex items-center gap-2 border-b border-[var(--color-dusty-rose)]/60 pb-3">
-              <Briefcase size={18} className="text-[var(--color-pompadour)]" />
+              <Briefcase size={18} className="text-[var(--color-pompadour-ink)]" />
               <h2 className="font-bold font-['Fraunces',serif] text-base">Servicios Registrados</h2>
             </div>
 
-            <p className="text-xs text-[var(--color-cacao)]/70">
+            <p className="text-xs text-[var(--color-cacao)]/80">
               Selecciona el servicio a configurar:
             </p>
 
             {isLoading && (
-              <div className="rounded-2xl border border-[var(--color-dusty-rose)] bg-white/60 p-3 text-sm text-[var(--color-cacao)]/70">
+              <div className="rounded-2xl border border-[var(--color-dusty-rose)] bg-white/60 p-3 text-sm text-[var(--color-cacao)]/80">
                 Cargando servicios del negocio...
               </div>
             )}
@@ -381,7 +382,7 @@ export const ServiceAssignmentScreen: React.FC<ServiceAssignmentScreenProps> = (
             )}
 
             {!isLoading && !loadError && services.length === 0 && (
-              <div className="rounded-2xl border border-[var(--color-dusty-rose)] bg-white/60 p-3 text-sm text-[var(--color-cacao)]/70">
+              <div className="rounded-2xl border border-[var(--color-dusty-rose)] bg-white/60 p-3 text-sm text-[var(--color-cacao)]/80">
                 No hay servicios registrados para este negocio.
               </div>
             )}
@@ -397,17 +398,17 @@ export const ServiceAssignmentScreen: React.FC<ServiceAssignmentScreenProps> = (
                       onClick={() => handleSelectService(srv.id)}
                       className={`w-full text-left p-3.5 rounded-2xl border transition-all flex items-center justify-between cursor-pointer ${
                         isSelected
-                          ? 'bg-white border-[var(--color-pompadour)] ring-2 ring-[var(--color-pompadour)]/20 shadow-xs'
+                          ? 'bg-white border-[var(--color-pompadour-ink)] ring-2 ring-[var(--color-pompadour)]/20 shadow-xs'
                           : 'bg-white/60 border-[var(--color-dusty-rose)]/70 hover:bg-white'
                       }`}
                     >
                       <div>
                         <div className="font-bold text-sm text-[var(--color-cacao)]">{srv.name}</div>
-                        <div className="text-[11px] text-[var(--color-cacao)]/60 mt-0.5">
+                        <div className="text-[11px] text-[var(--color-cacao)]/80 mt-0.5">
                           {srv.category} | {srv.durationMinutes} min • ${srv.price.toLocaleString('es-CO')}
                         </div>
                       </div>
-                      <ChevronRight size={16} className={isSelected ? 'text-[var(--color-pompadour)]' : 'text-stone-400'} />
+                      <ChevronRight size={16} className={isSelected ? 'text-[var(--color-pompadour-ink)]' : 'text-stone-400'} />
                     </button>
                   );
                 })}
@@ -420,7 +421,7 @@ export const ServiceAssignmentScreen: React.FC<ServiceAssignmentScreenProps> = (
             
             <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-[var(--color-dusty-rose)]/70 gap-2">
               <div>
-                <span className="text-xs font-bold text-[var(--color-pompadour)] uppercase tracking-wider">Configurando Servicio</span>
+                <span className="text-xs font-bold text-[var(--color-pompadour-ink)] uppercase tracking-wider">Configurando Servicio</span>
                 <h3 className="text-xl font-bold font-['Fraunces',serif] text-[var(--color-cacao)]">
                   {activeService?.name || 'Selecciona un servicio'}
                 </h3>
@@ -438,7 +439,7 @@ export const ServiceAssignmentScreen: React.FC<ServiceAssignmentScreenProps> = (
                 {/* Dependencias del Servicio (Switches / Toggles) */}
                 <div className="p-4 rounded-2xl bg-white border border-[var(--color-dusty-rose)] space-y-3">
                   <div className="flex items-center gap-2">
-                    <Info size={16} className="text-[var(--color-pompadour)]" />
+                    <Info size={16} className="text-[var(--color-pompadour-ink)]" />
                     <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-cacao)]">
                       Dependencia Operativa del Servicio
                     </span>
@@ -449,10 +450,10 @@ export const ServiceAssignmentScreen: React.FC<ServiceAssignmentScreenProps> = (
                     {/* Switch Empleados */}
                     <label className="flex items-center justify-between p-3 rounded-xl border border-[var(--color-dusty-rose)]/70 hover:bg-[var(--color-mimi-pink)]/20 cursor-pointer transition-colors">
                       <div className="flex items-center gap-2.5">
-                        <Users size={16} className="text-[var(--color-pompadour)]" />
+                        <Users size={16} className="text-[var(--color-pompadour-ink)]" />
                         <div>
                           <div className="text-xs font-bold text-[var(--color-cacao)]">¿Requiere Empleados?</div>
-                          <div className="text-[10px] text-[var(--color-cacao)]/60">Asignar personal que preste el servicio</div>
+                          <div className="text-[10px] text-[var(--color-cacao)]/80">Asignar personal que preste el servicio</div>
                         </div>
                       </div>
                       <input
@@ -469,10 +470,10 @@ export const ServiceAssignmentScreen: React.FC<ServiceAssignmentScreenProps> = (
                     {/* Switch Recursos */}
                     <label className="flex items-center justify-between p-3 rounded-xl border border-[var(--color-dusty-rose)]/70 hover:bg-[var(--color-mimi-pink)]/20 cursor-pointer transition-colors">
                       <div className="flex items-center gap-2.5">
-                        <Boxes size={16} className="text-[var(--color-pompadour)]" />
+                        <Boxes size={16} className="text-[var(--color-pompadour-ink)]" />
                         <div>
                           <div className="text-xs font-bold text-[var(--color-cacao)]">¿Requiere Recursos?</div>
-                          <div className="text-[10px] text-[var(--color-cacao)]/60">Cabinas, sillas, máquinas o kits</div>
+                          <div className="text-[10px] text-[var(--color-cacao)]/80">Cabinas, sillas, máquinas o kits</div>
                         </div>
                       </div>
                       <input
@@ -494,18 +495,18 @@ export const ServiceAssignmentScreen: React.FC<ServiceAssignmentScreenProps> = (
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Users size={18} className="text-[var(--color-pompadour)]" />
+                        <Users size={18} className="text-[var(--color-pompadour-ink)]" />
                         <h4 className="font-bold text-sm font-['Fraunces',serif]">
                           Empleados Asignados ({selectedEmployeeIds.length})
                         </h4>
                       </div>
-                      <span className="text-[11px] text-[var(--color-cacao)]/60">
+                      <span className="text-[11px] text-[var(--color-cacao)]/80">
                         Solo empleados de {currentBusinessName}
                       </span>
                     </div>
 
                     {availableEmployees.length === 0 ? (
-                      <div className="text-xs text-[var(--color-cacao)]/70 italic py-2">No hay empleados registrados en este negocio.</div>
+                      <div className="text-xs text-[var(--color-cacao)]/80 italic py-2">No hay empleados registrados en este negocio.</div>
                     ) : (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                         {availableEmployees.map((emp) => {
@@ -516,17 +517,17 @@ export const ServiceAssignmentScreen: React.FC<ServiceAssignmentScreenProps> = (
                               onClick={() => toggleEmployee(emp.id)}
                               className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${
                                 isAssigned
-                                  ? 'bg-white border-[var(--color-pompadour)] ring-1 ring-[var(--color-pompadour)] shadow-2xs'
+                                  ? 'bg-white border-[var(--color-pompadour-ink)] ring-1 ring-[var(--color-pompadour)] shadow-2xs'
                                   : 'bg-white/60 border-[var(--color-dusty-rose)]/80 hover:bg-white'
                               }`}
                             >
                               <div className="truncate pr-2">
                                 <div className="text-xs font-bold text-[var(--color-cacao)] truncate">{emp.fullName}</div>
-                                <div className="text-[11px] text-[var(--color-cacao)]/60">CC: {emp.documentId}</div>
+                                <div className="text-[11px] text-[var(--color-cacao)]/80">CC: {emp.documentId}</div>
                               </div>
                               <div className={`w-5 h-5 rounded-md flex items-center justify-center border shrink-0 ${
                                 isAssigned
-                                  ? 'bg-[var(--color-pompadour)] border-[var(--color-pompadour)] text-white'
+                                  ? 'bg-[var(--color-pompadour-ink)] border-[var(--color-pompadour-ink)] text-white'
                                   : 'border-[var(--color-dusty-rose)] bg-white text-transparent'
                               }`}>
                                 <Check size={12} />
@@ -544,18 +545,18 @@ export const ServiceAssignmentScreen: React.FC<ServiceAssignmentScreenProps> = (
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Boxes size={18} className="text-[var(--color-pompadour)]" />
+                        <Boxes size={18} className="text-[var(--color-pompadour-ink)]" />
                         <h4 className="font-bold text-sm font-['Fraunces',serif]">
                           Recursos Asignados ({selectedResourceIds.length})
                         </h4>
                       </div>
-                      <span className="text-[11px] text-[var(--color-cacao)]/60">
+                      <span className="text-[11px] text-[var(--color-cacao)]/80">
                         Solo recursos de {currentBusinessName}
                       </span>
                     </div>
 
                     {availableResources.length === 0 ? (
-                      <div className="text-xs text-[var(--color-cacao)]/70 italic py-2">No hay recursos registrados en este negocio.</div>
+                      <div className="text-xs text-[var(--color-cacao)]/80 italic py-2">No hay recursos registrados en este negocio.</div>
                     ) : (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                         {availableResources.map((res) => {
@@ -566,17 +567,17 @@ export const ServiceAssignmentScreen: React.FC<ServiceAssignmentScreenProps> = (
                               onClick={() => toggleResource(res.id)}
                               className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${
                                 isAssigned
-                                  ? 'bg-white border-[var(--color-pompadour)] ring-1 ring-[var(--color-pompadour)] shadow-2xs'
+                                  ? 'bg-white border-[var(--color-pompadour-ink)] ring-1 ring-[var(--color-pompadour)] shadow-2xs'
                                   : 'bg-white/60 border-[var(--color-dusty-rose)]/80 hover:bg-white'
                               }`}
                             >
                               <div className="truncate pr-2">
                                 <div className="text-xs font-bold text-[var(--color-cacao)] truncate">{res.name}</div>
-                                <div className="text-[10px] text-[var(--color-cacao)]/60 font-semibold uppercase">{res.type} | Cant: {res.quantity}</div>
+                                <div className="text-[10px] text-[var(--color-cacao)]/80 font-semibold uppercase">{res.type} | Cant: {res.quantity}</div>
                               </div>
                               <div className={`w-5 h-5 rounded-md flex items-center justify-center border shrink-0 ${
                                 isAssigned
-                                  ? 'bg-[var(--color-pompadour)] border-[var(--color-pompadour)] text-white'
+                                  ? 'bg-[var(--color-pompadour-ink)] border-[var(--color-pompadour-ink)] text-white'
                                   : 'border-[var(--color-dusty-rose)] bg-white text-transparent'
                               }`}>
                                 <Check size={12} />
@@ -592,14 +593,14 @@ export const ServiceAssignmentScreen: React.FC<ServiceAssignmentScreenProps> = (
                 {/* Botón Guardar Asignación */}
                 <button
                   type="submit"
-                  className="w-full py-3 px-6 rounded-2xl bg-[var(--color-pompadour)] hover:opacity-90 text-white font-bold text-sm tracking-wide shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
+                  className="w-full py-3 px-6 rounded-2xl bg-[var(--color-pompadour-ink)] hover:opacity-90 text-white font-bold text-sm tracking-wide shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
                 >
                   <Save size={18} />
                   Guardar Asignaciones del Servicio
                 </button>
               </form>
             ) : (
-              <div className="flex items-center justify-center h-48 text-[var(--color-cacao)]/50 text-sm">
+              <div className="flex items-center justify-center h-48 text-[var(--color-cacao)]/80 text-sm">
                 Selecciona un servicio de la lista para configurarlo.
               </div>
             )}

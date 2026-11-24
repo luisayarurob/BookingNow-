@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Calendar as CalendarIcon, 
   Clock, 
@@ -71,8 +71,11 @@ export const BookingRegisterScreen: React.FC<BookingRegisterScreenProps> = ({
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [errorField, setErrorField] = useState<'date' | 'time' | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createdBooking, setCreatedBooking] = useState<any>(null);
+  const stepHeadingRef = useRef<HTMLHeadingElement>(null);
+  const previousStep = useRef(step);
 
   // 1. Cargar disponibilidad real cuando cambie la fecha o el servicio
   useEffect(() => {
@@ -96,6 +99,11 @@ export const BookingRegisterScreen: React.FC<BookingRegisterScreenProps> = ({
     fetchDisponibilidad();
   }, [selectedDate, service.id]);
 
+  useEffect(() => {
+    if (previousStep.current !== step) stepHeadingRef.current?.focus();
+    previousStep.current = step;
+  }, [step]);
+
   // Obtener el slot seleccionado actualmente
   const currentSlot = availableSlots.find(s => s.hora === selectedTime);
 
@@ -103,18 +111,22 @@ export const BookingRegisterScreen: React.FC<BookingRegisterScreenProps> = ({
     setErrorMessage(null);
     if (!selectedDate) {
       setErrorMessage('Por favor selecciona una fecha.');
+      setErrorField('date');
       return;
     }
     if (!selectedTime) {
-      setErrorMessage('Por favor selecciona una hora disponible.');
+      setErrorMessage('Selecciona una hora disponible para continuar.');
+      setErrorField('time');
       return;
     }
+    setErrorField(null);
     setStep(2);
   };
 
   // 2. Guardar la reserva en la base de datos
   const handleConfirmBooking = async () => {
     setErrorMessage(null);
+    setErrorField(null);
     const token = localStorage.getItem('token') || sessionStorage.getItem('token');
 
     if (!token) {
@@ -177,6 +189,7 @@ export const BookingRegisterScreen: React.FC<BookingRegisterScreenProps> = ({
             {onCancel && step !== 3 && (
               <button
                 type="button"
+                aria-label="Volver al paso anterior"
                 onClick={onCancel}
                 className="p-2 rounded-xl bg-[var(--color-cream)] border border-[var(--color-dusty-rose)] text-[var(--color-cacao)] hover:bg-white transition-all cursor-pointer shadow-2xs"
               >
@@ -185,21 +198,30 @@ export const BookingRegisterScreen: React.FC<BookingRegisterScreenProps> = ({
             )}
             <div>
               <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-[var(--color-cream)] border border-[var(--color-dusty-rose)] text-xs font-semibold text-[var(--color-cacao)] mb-1">
-                <Building2 size={13} className="text-[var(--color-pompadour)]" />
+                <Building2 size={13} className="text-[var(--color-pompadour-ink)]" />
                 <span>{service.business.name}</span>
               </div>
-              <h1 className="text-2xl md:text-3xl font-bold font-['Fraunces',serif] text-[var(--color-cacao)]">
+              <h1
+                ref={step === 2 ? undefined : stepHeadingRef}
+                tabIndex={-1}
+                className="text-2xl md:text-3xl font-bold font-['Fraunces',serif] text-[var(--color-cacao)]"
+              >
                 {step === 3 ? '¡Reserva Exitosa!' : 'Agendar Cita'}
               </h1>
             </div>
           </div>
-          <div className="text-xs font-bold px-3 py-1.5 rounded-xl bg-white border border-[var(--color-dusty-rose)] text-[var(--color-pompadour)]">
+          <div
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            className="text-xs font-bold px-3 py-1.5 rounded-xl bg-white border border-[var(--color-dusty-rose)] text-[var(--color-pompadour-ink)]"
+          >
             Paso {step} de 3
           </div>
         </div>
 
         {errorMessage && (
-          <div className="flex items-center gap-2.5 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-sm animate-in fade-in">
+          <div id="booking-error" role="alert" aria-atomic="true" className="flex items-center gap-2.5 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-sm animate-in fade-in">
             <AlertCircle size={18} className="shrink-0 text-rose-600" />
             <span className="font-medium">{errorMessage}</span>
           </div>
@@ -210,13 +232,13 @@ export const BookingRegisterScreen: React.FC<BookingRegisterScreenProps> = ({
           <div className="space-y-6">
             <div className="bg-[var(--color-cream)] border border-[var(--color-dusty-rose)] rounded-3xl p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-pompadour)]">Servicio seleccionado</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-pompadour-ink)]">Servicio seleccionado</span>
                 <h2 className="text-lg font-bold font-['Fraunces',serif] text-[var(--color-cacao)]">{service.name}</h2>
-                <div className="flex items-center gap-3 text-xs text-[var(--color-cacao)]/70 mt-1">
+                <div className="flex items-center gap-3 text-xs text-[var(--color-cacao)]/80 mt-1">
                   <span className="flex items-center gap-1"><Clock size={12} /> {service.durationMinutes} min</span>
                 </div>
               </div>
-              <div className="text-2xl font-bold font-['Fraunces',serif] text-[var(--color-pompadour)] sm:text-right">
+              <div className="text-2xl font-bold font-['Fraunces',serif] text-[var(--color-pompadour-ink)] sm:text-right">
                 ${service.price.toLocaleString('es-CO')}
               </div>
             </div>
@@ -225,31 +247,42 @@ export const BookingRegisterScreen: React.FC<BookingRegisterScreenProps> = ({
               
               {/* Fecha */}
               <div className="space-y-3">
-                <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[var(--color-cacao)]">
-                  <CalendarIcon size={15} className="text-[var(--color-pompadour)]" /> 
-                  Fecha de la cita <span className="text-[var(--color-pompadour)]">*</span>
+                <label htmlFor="booking-date" className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[var(--color-cacao)]">
+                  <CalendarIcon size={15} aria-hidden="true" className="text-[var(--color-pompadour-ink)]" />
+                  Fecha de la cita <span aria-hidden="true" className="text-[var(--color-pompadour-ink)]">*</span>
                 </label>
                 <input
+                  id="booking-date"
                   type="date"
+                  required
                   value={selectedDate}
                   min={new Date().toISOString().split('T')[0]}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="w-full sm:w-64 px-4 py-2.5 rounded-xl bg-white border border-[var(--color-dusty-rose)] text-sm font-medium focus:outline-none focus:border-[var(--color-pompadour)] focus:ring-2 focus:ring-[var(--color-pompadour)]/20"
+                  onChange={(e) => {
+                    setSelectedDate(e.target.value);
+                    setErrorMessage(null);
+                    setErrorField(null);
+                  }}
+                  aria-invalid={errorField === 'date' || undefined}
+                  aria-describedby={errorField === 'date' && errorMessage ? 'booking-error' : undefined}
+                  className="w-full sm:w-64 px-4 py-2.5 rounded-xl bg-white border border-[var(--color-dusty-rose)] text-sm font-medium focus:outline-none focus:border-[var(--color-pompadour-ink)] focus:ring-2 focus:ring-[var(--color-pompadour)]/20"
                 />
               </div>
 
               {/* Horas Disponibles */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[var(--color-cacao)]">
-                    <Clock size={15} className="text-[var(--color-pompadour)]" /> 
-                    Horas disponibles ({selectedDate}) <span className="text-[var(--color-pompadour)]">*</span>
-                  </label>
-                  {loadingSlots && <Loader2 size={16} className="animate-spin text-[var(--color-pompadour)]" />}
-                </div>
+              <fieldset
+                className="min-w-0 space-y-3"
+                aria-required="true"
+                aria-invalid={errorField === 'time' || undefined}
+                aria-describedby={errorField === 'time' && errorMessage ? 'booking-error' : undefined}
+              >
+                <legend className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[var(--color-cacao)]">
+                  <Clock size={15} aria-hidden="true" className="text-[var(--color-pompadour-ink)]" />
+                  Horas disponibles ({selectedDate}) <span aria-hidden="true" className="text-[var(--color-pompadour-ink)]">*</span>
+                </legend>
+                {loadingSlots && <p role="status" className="text-xs text-[var(--color-cacao)]">Cargando horarios</p>}
 
                 {availableSlots.length === 0 && !loadingSlots ? (
-                  <p className="text-xs text-[var(--color-cacao)]/60 italic p-3 bg-white/50 rounded-xl border border-dashed border-[var(--color-dusty-rose)]">
+                  <p role="status" className="text-xs text-[var(--color-cacao)]/80 italic p-3 bg-white/50 rounded-xl border border-dashed border-[var(--color-dusty-rose)]">
                     No hay cupos disponibles para esta fecha. Intenta seleccionando otro día.
                   </p>
                 ) : (
@@ -260,10 +293,15 @@ export const BookingRegisterScreen: React.FC<BookingRegisterScreenProps> = ({
                         <button
                           key={hora}
                           type="button"
-                          onClick={() => setSelectedTime(hora)}
+                          onClick={() => {
+                            setSelectedTime(hora);
+                            setErrorMessage(null);
+                            setErrorField(null);
+                          }}
+                          aria-pressed={isSelected}
                           className={`py-2.5 px-3 rounded-xl text-xs font-bold border transition-all text-center cursor-pointer ${
                             isSelected
-                              ? 'bg-[var(--color-pompadour)] text-white border-[var(--color-pompadour)] shadow-xs scale-[1.02]'
+                              ? 'bg-[var(--color-pompadour-ink)] text-white border-[var(--color-pompadour-ink)] shadow-xs scale-[1.02]'
                               : 'bg-white text-[var(--color-cacao)] border-[var(--color-dusty-rose)] hover:bg-[var(--color-mimi-pink)]/30'
                           }`}
                         >
@@ -273,14 +311,13 @@ export const BookingRegisterScreen: React.FC<BookingRegisterScreenProps> = ({
                     })}
                   </div>
                 )}
-              </div>
+              </fieldset>
 
               {/* Botón Continuar */}
               <button
                 type="button"
                 onClick={handleProceedToConfirm}
-                disabled={!selectedTime}
-                className="w-full py-3.5 px-6 rounded-2xl bg-[var(--color-pompadour)] hover:opacity-90 text-white font-bold text-sm tracking-wide shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                className="w-full py-3.5 px-6 rounded-2xl bg-[var(--color-pompadour-ink)] hover:opacity-90 text-white font-bold text-sm tracking-wide shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 Continuar a Confirmación <ChevronRight size={18} />
               </button>
@@ -291,30 +328,30 @@ export const BookingRegisterScreen: React.FC<BookingRegisterScreenProps> = ({
         {/* PASO 2: CONFIRMACIÓN */}
         {step === 2 && (
           <div className="bg-[var(--color-cream)] border border-[var(--color-dusty-rose)] rounded-3xl p-6 md:p-8 shadow-xs space-y-6">
-            <h2 className="text-xl font-bold font-['Fraunces',serif] text-[var(--color-cacao)] border-b border-[var(--color-dusty-rose)]/60 pb-4">
+            <h2 ref={stepHeadingRef} tabIndex={-1} className="text-xl font-bold font-['Fraunces',serif] text-[var(--color-cacao)] border-b border-[var(--color-dusty-rose)]/60 pb-4">
               Verifica los datos de tu reserva
             </h2>
             
             <div className="bg-white rounded-2xl p-5 border border-[var(--color-dusty-rose)]/80 space-y-3.5 text-xs text-[var(--color-cacao)]">
               <div className="flex justify-between py-1.5 border-b border-stone-100">
-                <span className="text-[var(--color-cacao)]/60">Servicio:</span>
+                <span className="text-[var(--color-cacao)]/80">Servicio:</span>
                 <span className="font-bold text-sm">{service.name}</span>
               </div>
               <div className="flex justify-between py-1.5 border-b border-stone-100">
-                <span className="text-[var(--color-cacao)]/60">Fecha:</span>
+                <span className="text-[var(--color-cacao)]/80">Fecha:</span>
                 <span className="font-bold">{selectedDate}</span>
               </div>
               <div className="flex justify-between py-1.5 border-b border-stone-100">
-                <span className="text-[var(--color-cacao)]/60">Hora:</span>
-                <span className="font-bold text-[var(--color-pompadour)] text-sm">{selectedTime.slice(0, 5)}</span>
+                <span className="text-[var(--color-cacao)]/80">Hora:</span>
+                <span className="font-bold text-[var(--color-pompadour-ink)] text-sm">{selectedTime.slice(0, 5)}</span>
               </div>
               <div className="flex justify-between py-1.5 border-b border-stone-100">
-                <span className="text-[var(--color-cacao)]/60">Cliente:</span>
+                <span className="text-[var(--color-cacao)]/80">Cliente:</span>
                 <span className="font-bold">{customerName}</span>
               </div>
               <div className="flex justify-between py-2 pt-3 text-base">
                 <span className="font-bold">Total a pagar:</span>
-                <span className="font-bold font-['Fraunces',serif] text-[var(--color-pompadour)] text-xl">
+                <span className="font-bold font-['Fraunces',serif] text-[var(--color-pompadour-ink)] text-xl">
                   ${service.price.toLocaleString('es-CO')}
                 </span>
               </div>
@@ -333,7 +370,7 @@ export const BookingRegisterScreen: React.FC<BookingRegisterScreenProps> = ({
                 type="button"
                 onClick={handleConfirmBooking}
                 disabled={isSubmitting}
-                className="py-3 px-6 rounded-2xl bg-[var(--color-pompadour)] hover:opacity-90 text-white font-bold text-sm tracking-wide shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                className="py-3 px-6 rounded-2xl bg-[var(--color-pompadour-ink)] hover:opacity-90 text-white font-bold text-sm tracking-wide shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle2 size={18} />}
                 {isSubmitting ? 'Confirmando...' : 'Confirmar Reserva'}
@@ -355,11 +392,14 @@ export const BookingRegisterScreen: React.FC<BookingRegisterScreenProps> = ({
               <p className="text-xs text-[var(--color-cacao)]/75">
                 Código de reserva: <strong className="text-[var(--color-cacao)]">{createdBooking.id}</strong>
               </p>
+              <p className="text-xs text-[var(--color-cacao)]/80" role="status">
+                La reserva fue registrada. La entrega de cualquier confirmación por correo depende del servicio de correo configurado.
+              </p>
             </div>
             <button
               type="button"
               onClick={() => onCancel ? onCancel() : setStep(1)}
-              className="py-3 px-8 rounded-2xl bg-[var(--color-pompadour)] text-white text-xs font-bold cursor-pointer hover:opacity-90 shadow-xs"
+              className="py-3 px-8 rounded-2xl bg-[var(--color-pompadour-ink)] text-white text-xs font-bold cursor-pointer hover:opacity-90 shadow-xs"
             >
               Volver al Inicio
             </button>

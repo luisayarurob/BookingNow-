@@ -9,6 +9,9 @@ export type Screen =
   | "employee-register"
   | "business-schedule"
   | "service-assignment"
-  | "client-home";
+  | "client-home"
+  | "client-reservations"
+  | "client-history"
+  | "reports";
 
-export type Role = "cliente" | "proveedor";
+export type Role = "cliente" | "proveedor" | "administrador";
