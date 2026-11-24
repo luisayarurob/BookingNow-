@@ -14,6 +14,8 @@ import { ResourceRegister as ResourceRegisterScreen } from "./screens/ResourceRe
 import { EmployeeRegisterScreen } from "./screens/EmployeeRegisterScreen";
 import { BusinessScheduleScreen } from "./screens/BusinessScheduleScreen";
 import { ServiceAssignmentScreen } from "./screens/ServiceAssignmentScreen";
+import { ClientReservationsScreen } from "./screens/ClientReservationsScreen";
+import { ReportsScreen } from "./screens/ReportsScreen";
 
 import type { Role, Screen } from "./types/navigation";
 import { listarServicios, obtenerMiNegocio } from "./services/apiService";
@@ -38,6 +40,9 @@ export default function App() {
     return localStorage.getItem("nombreNegocio") || BUSINESS_NAME;
   });
   const [businessCategory, setBusinessCategory] = useState<string | undefined>();
+  const [activeBusinessId, setActiveBusinessId] = useState<number>(() =>
+    Number(localStorage.getItem("idNegocio")) || 0
+  );
 
   useEffect(() => {
     localStorage.setItem("app_screen", screen);
@@ -93,6 +98,7 @@ export default function App() {
 
   async function handleLoginSuccess(r: Role) {
     setRole(r);
+    localStorage.setItem("app_role", r);
     if (r === "proveedor") {
       try {
         const token = localStorage.getItem("token");
@@ -104,9 +110,11 @@ export default function App() {
         console.error("No fue posible cargar el negocio del proveedor:", error);
         setScreen(localStorage.getItem("token") ? "business-register" : "login");
       }
-    } else {
+    } else if (r === "cliente") {
       setBusinessName(BUSINESS_NAME);
       setScreen("client-home");
+    } else {
+      setScreen("reports");
     }
   }
 
@@ -123,9 +131,11 @@ export default function App() {
       )}
       {screen === "business-register" && (
         <BusinessRegister
-          onSuccess={(registeredName, registeredCategory) => {
+          onSuccess={(registeredName, registeredCategory, registeredBusinessId) => {
             const storedName = registeredName || localStorage.getItem("nombreNegocio") || BUSINESS_NAME;
-            const registeredBusinessId = Number(localStorage.getItem("idNegocio"));
+            localStorage.setItem("idNegocio", String(registeredBusinessId));
+            sessionStorage.setItem("createdBusinessId", String(registeredBusinessId));
+            setActiveBusinessId(registeredBusinessId);
             localStorage.setItem("nombreNegocio", storedName);
             setBusinessName(storedName);
             setBusinessCategory(registeredCategory);
@@ -146,6 +156,13 @@ export default function App() {
       {screen === "business-schedule" && (
         <BusinessScheduleScreen
           businessName={businessName}
+          businessId={activeBusinessId}
+          onBusinessChange={(registeredBusinessId, registeredBusinessName) => {
+            localStorage.setItem("idNegocio", String(registeredBusinessId));
+            localStorage.setItem("nombreNegocio", registeredBusinessName);
+            setActiveBusinessId(registeredBusinessId);
+            setBusinessName(registeredBusinessName);
+          }}
           onSaved={() => setScreen("service-list")}
         />
       )}
@@ -187,15 +204,24 @@ export default function App() {
       {(screen === "home" || screen === "client-home") && (
         <ClientHomeScreen />
       )}
+      {screen === "client-reservations" && (
+        <ClientReservationsScreen view="active" onCreateReservation={() => setScreen("client-home")} />
+      )}
+      {screen === "client-history" && (
+        <ClientReservationsScreen view="history" onCreateReservation={() => setScreen("client-home")} />
+      )}
+      {screen === "reports" && (role === "proveedor" || role === "administrador") && (
+        <ReportsScreen />
+      )}
 
       {!localStorage.getItem("token") && (
         <DemoNav screen={screen} onNavigate={setScreen} />
       )}
-      {localStorage.getItem("token") && role === "proveedor" && screen !== "business-schedule" && (
-        <ProviderNav screen={screen} onNavigate={setScreen} onLogout={handleLogout} />
+      {localStorage.getItem("token") && (role === "proveedor" || role === "administrador") && (
+        <ProviderNav screen={screen} onNavigate={setScreen} onLogout={handleLogout} role={role} />
       )}
       {localStorage.getItem("token") && role === "cliente" && (
-        <ClientNav onLogout={handleLogout} />
+        <ClientNav screen={screen} onNavigate={setScreen} onLogout={handleLogout} />
       )}
     </div>
   );

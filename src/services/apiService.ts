@@ -422,6 +422,129 @@ export async function crearReserva(payload: CrearReservaCommand, token: string) 
 
   return data;
 }
+
+export interface ReservaResumen {
+  idReserva: number;
+  fecha: string;
+  hora: string;
+  nombreServicio: string;
+  nombreNegocio: string;
+  estado: string;
+}
+
+function buildAuthError(response: Response, fallback: string): ServiceApiError {
+  if (response.status === 401) {
+    localStorage.removeItem("token");
+    localStorage.removeItem("app_screen");
+    return new ServiceApiError("Tu sesión expiró. Inicia sesión nuevamente.", 401);
+  }
+  if (response.status === 403) {
+    return new ServiceApiError("No tienes permisos para realizar esta acción.", 403);
+  }
+  return new ServiceApiError(fallback, response.status);
+}
+
+export async function listarReservasActivas(token: string): Promise<ReservaResumen[]> {
+  const response = await fetch(`${API_URL}/api/reservas/mias/activas`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = (await response.json().catch(() => [])) as ReservaResumen[] & ApiErrorResponse;
+  if (!response.ok) {
+    throw buildAuthError(
+      response,
+      (data as unknown as ApiErrorResponse).detail || "No fue posible consultar las reservas activas.",
+    );
+  }
+  return Array.isArray(data) ? data : [];
+}
+
+export async function listarHistorialReservas(token: string): Promise<ReservaResumen[]> {
+  const response = await fetch(`${API_URL}/api/reservas/mias/historial`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = (await response.json().catch(() => [])) as ReservaResumen[] & ApiErrorResponse;
+  if (!response.ok) {
+    throw buildAuthError(
+      response,
+      (data as unknown as ApiErrorResponse).detail || "No fue posible consultar el historial.",
+    );
+  }
+  return Array.isArray(data) ? data : [];
+}
+
+export async function cancelarReserva(idReserva: number, motivo: string | undefined, token: string) {
+  const response = await fetch(`${API_URL}/api/reservas/${encodeURIComponent(String(idReserva))}/cancelacion`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(motivo ? { motivo } : {}),
+  });
+  const data = (await response.json().catch(() => ({}))) as ApiErrorResponse;
+  if (!response.ok) {
+    if (response.status === 409) {
+      throw new ServiceApiError(
+        data.detail || "La reserva solo se puede cancelar hasta dos horas antes de la cita.",
+        409,
+        data.campos,
+      );
+    }
+    throw buildAuthError(
+      response,
+      data.detail || `No fue posible cancelar la reserva (${response.status}).`,
+    );
+  }
+  return data;
+}
+
+export interface ReporteCommand {
+  tipoReporte: "RESERVAS" | "USO_SERVICIOS_RECURSOS";
+  fechaDesde?: string;
+  fechaHasta?: string;
+  idNegocio?: number;
+  idServicio?: number;
+  idRecurso?: number;
+  estado?: string;
+  formato: "PDF" | "EXCEL";
+}
+
+export interface ReporteArchivo {
+  blob: Blob;
+  filename: string;
+  contentType: string;
+}
+
+export async function generarReporte(payload: ReporteCommand, token: string): Promise<ReporteArchivo> {
+  const response = await fetch(`${API_URL}/api/reportes`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+      Accept: "application/pdf, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const data = (await response.json().catch(() => ({}))) as ApiErrorResponse;
+    throw buildAuthError(response, data.detail || `No fue posible generar el reporte (${response.status}).`);
+  }
+
+  const contentDisposition = response.headers.get("Content-Disposition") || "";
+  const utfMatch = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+  const asciiMatch = contentDisposition.match(/filename="?([^";]+)"?/i);
+  const filename = decodeURIComponent((utfMatch?.[1] || asciiMatch?.[1] || "").trim())
+    || `reporte-${payload.tipoReporte.toLowerCase()}.${payload.formato === "PDF" ? "pdf" : "xlsx"}`;
+
+  return {
+    blob: await response.blob(),
+    filename,
+    contentType: response.headers.get("Content-Type") || (payload.formato === "PDF"
+      ? "application/pdf"
+      : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+  };
+}
 export interface SlotDisponibilidad {
   hora: string;
   empleadosDisponibles: number[];

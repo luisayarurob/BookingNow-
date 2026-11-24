@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Eye, EyeOff, CheckCircle2, X } from "lucide-react";
 import { registerClient, registerProvider } from "../services/apiRegister";
 
@@ -25,7 +25,7 @@ const TAKEN_RAZON = ["Empresa Registrada S.A."];
 const TAKEN_NIT = ["900123456-7"];
 
 const inputBase =
-  "w-full rounded-xl border px-4 py-3 text-sm outline-none transition-all placeholder-[#8D93CB] bg-white/60 focus:ring-2 focus:ring-[#F7769B]/40 focus:border-[#F7769B]";
+  "w-full rounded-xl border px-4 py-3 text-sm outline-none transition-all placeholder-[var(--color-vista-blue-ink)] bg-white/60 focus:ring-2 focus:ring-[#F7769B]/40 focus:border-[#F7769B]";
 const inputOk = "border-[#E6C1C6]";
 const inputErr = "border-red-400 focus:ring-red-300/40 focus:border-red-400";
 
@@ -40,26 +40,36 @@ function mapApiErrors(fields: Record<string, string> | undefined, message: strin
   return errors;
 }
 
+function withoutError(errors: Record<string, string>, field: string) {
+  const next = { ...errors };
+  delete next[field];
+  return next;
+}
+
 function Field({
-  label, value, onChange, type = "text", placeholder, error, suffix,
+  id, label, value, onChange, type = "text", placeholder, error, suffix,
 }: {
-  label: string; value: string; onChange: (value: string) => void;
+  id: string; label: string; value: string; onChange: (value: string) => void;
   type?: string; placeholder?: string; error?: string; suffix?: React.ReactNode;
 }) {
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-xs font-semibold tracking-wide text-[#493333]/70 uppercase">{label}</label>
+      <label htmlFor={id} className="text-xs font-semibold tracking-wide text-[#493333]/80 uppercase">{label}</label>
       <div className="relative">
         <input
+          id={id}
           type={type}
+          required
           value={value}
           onChange={e => onChange(e.target.value)}
           placeholder={placeholder}
+          aria-invalid={Boolean(error)}
+          aria-describedby={error ? `${id}-error` : undefined}
           className={`${inputBase} ${error ? inputErr : inputOk} ${suffix ? "pr-10" : ""}`}
         />
         {suffix && <span className="absolute right-3 top-1/2 -translate-y-1/2">{suffix}</span>}
       </div>
-      {error && <p className="text-xs text-red-500 mt-0.5">{error}</p>}
+      {error && <p id={`${id}-error`} className="text-xs text-red-700 mt-0.5">{error}</p>}
     </div>
   );
 }
@@ -74,6 +84,8 @@ export default function Register({ onGoLogin }: RegisterProps) {
   const [cUser, setCUser] = useState("");
   const [cPw, setCPw] = useState("");
   const [cErrors, setCErrors] = useState<Record<string, string>>({});
+  const clientFormRef = useRef<HTMLFormElement>(null);
+  const [focusClientErrors, setFocusClientErrors] = useState(false);
 
   // Proveedor
   const [pEmail, setPEmail] = useState("");
@@ -82,6 +94,22 @@ export default function Register({ onGoLogin }: RegisterProps) {
   const [pUser, setPUser] = useState("");
   const [pPw, setPPw] = useState("");
   const [pErrors, setPErrors] = useState<Record<string, string>>({});
+  const providerFormRef = useRef<HTMLFormElement>(null);
+  const [focusProviderErrors, setFocusProviderErrors] = useState(false);
+
+  useEffect(() => {
+    if (focusClientErrors && Object.keys(cErrors).length) {
+      clientFormRef.current?.querySelector<HTMLInputElement>('[aria-invalid="true"]')?.focus();
+      setFocusClientErrors(false);
+    }
+  }, [cErrors, focusClientErrors]);
+
+  useEffect(() => {
+    if (focusProviderErrors && Object.keys(pErrors).length) {
+      providerFormRef.current?.querySelector<HTMLInputElement>('[aria-invalid="true"]')?.focus();
+      setFocusProviderErrors(false);
+    }
+  }, [pErrors, focusProviderErrors]);
 
   async function submitCliente(e: React.FormEvent) {
     e.preventDefault();
@@ -92,7 +120,11 @@ export default function Register({ onGoLogin }: RegisterProps) {
     if (TAKEN_USERNAMES.includes(cUser)) errs.user = "Nombre de usuario ya en uso.";
     const pwErr = validatePassword(cPw);
     if (pwErr) errs.pw = pwErr;
-    if (Object.keys(errs).length) { setCErrors(errs); return; }
+    if (Object.keys(errs).length) {
+      setFocusClientErrors(true);
+      setCErrors(errs);
+      return;
+    }
 
     try {
       await registerClient({
@@ -104,6 +136,7 @@ export default function Register({ onGoLogin }: RegisterProps) {
       setSuccess(true);
     } catch (error) {
       const apiError = error as Error & { fields?: Record<string, string> };
+      setFocusClientErrors(true);
       setCErrors(mapApiErrors(apiError.fields, apiError.message));
     }
   }
@@ -121,7 +154,11 @@ export default function Register({ onGoLogin }: RegisterProps) {
     if (TAKEN_USERNAMES.includes(pUser)) errs.user = "Nombre de usuario o contraseña inválidos.";
     const pwErr = validatePassword(pPw);
     if (pwErr) errs.pw = pwErr;
-    if (Object.keys(errs).length) { setPErrors(errs); return; }
+    if (Object.keys(errs).length) {
+      setFocusProviderErrors(true);
+      setPErrors(errs);
+      return;
+    }
 
     try {
       await registerProvider({
@@ -135,6 +172,7 @@ export default function Register({ onGoLogin }: RegisterProps) {
       setSuccess(true);
     } catch (error) {
       const apiError = error as Error & { fields?: Record<string, string> };
+      setFocusProviderErrors(true);
       setPErrors(mapApiErrors(apiError.fields, apiError.message));
     }
   }
@@ -145,12 +183,13 @@ export default function Register({ onGoLogin }: RegisterProps) {
       {success && (
         <div className="fixed inset-0 bg-[#493333]/30 backdrop-blur-sm flex items-center justify-center z-50 p-6">
           <div className="bg-[#FCF6EF] rounded-3xl p-10 max-w-sm w-full text-center shadow-2xl border border-[#E6C1C6]">
-            <CheckCircle2 className="mx-auto mb-4 text-[#F7769B]" size={56} strokeWidth={1.5} />
+            <CheckCircle2 className="mx-auto mb-4 text-[var(--color-pompadour-ink)]" size={56} strokeWidth={1.5} />
             <h2 className="font-display text-2xl text-[#493333] mb-2">¡Cuenta creada!</h2>
-            <p className="text-sm text-[#493333]/70 mb-6">Tu cuenta fue registrada exitosamente. Ya puedes iniciar sesión.</p>
+            <p className="text-sm text-[#493333]/80 mb-6">Tu cuenta fue registrada exitosamente. Ya puedes iniciar sesión.</p>
             <button
+              type="button"
               onClick={onGoLogin}
-              className="w-full bg-[#F7769B] text-white font-semibold py-3 rounded-xl hover:bg-[#f55d87] transition-colors"
+              className="w-full bg-[var(--color-pompadour-ink)] text-white font-semibold py-3 rounded-xl hover:bg-[#8F284B] transition-colors"
             >
               Iniciar sesión
             </button>
@@ -161,7 +200,7 @@ export default function Register({ onGoLogin }: RegisterProps) {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="font-display text-4xl font-semibold text-[#493333] mb-1">Crear cuenta</h1>
-          <p className="text-sm text-[#493333]/60">Elige tu tipo de cuenta para comenzar</p>
+          <p className="text-sm text-[#493333]/80">Elige tu tipo de cuenta para comenzar</p>
         </div>
 
         <div className="bg-[#FCF6EF] rounded-3xl shadow-xl border border-[#E6C1C6] overflow-hidden">
@@ -170,11 +209,13 @@ export default function Register({ onGoLogin }: RegisterProps) {
             {(["cliente", "proveedor"] as Tab[]).map(t => (
               <button
                 key={t}
+                type="button"
                 onClick={() => setTab(t)}
+                aria-pressed={tab === t}
                 className={`flex-1 py-4 text-sm font-semibold capitalize transition-colors ${
                   tab === t
-                    ? "text-[#F7769B] border-b-2 border-[#F7769B] bg-white/50"
-                    : "text-[#493333]/50 hover:text-[#493333]/80"
+                    ? "text-[var(--color-pompadour-ink)] border-b-2 border-[#F7769B] bg-white/50"
+                    : "text-[#493333]/80 hover:text-[#493333]/80"
                 }`}
               >
                 {t === "cliente" ? "Cliente" : "Proveedor"}
@@ -184,92 +225,124 @@ export default function Register({ onGoLogin }: RegisterProps) {
 
           <div className="p-8">
             {tab === "cliente" ? (
-              <form onSubmit={submitCliente} className="flex flex-col gap-4">
+              <form ref={clientFormRef} onSubmit={submitCliente} noValidate className="flex flex-col gap-4">
                 <Field
+                  id="register-client-email"
                   label="Correo electrónico"
                   value={cEmail}
-                  onChange={setCEmail}
+                  onChange={value => {
+                    setCEmail(value);
+                    setCErrors(errors => withoutError(errors, "email"));
+                  }}
                   type="email"
                   placeholder="tu@correo.com"
                   error={cErrors.email}
                 />
                 <Field
+                  id="register-client-user"
                   label="Nombre de usuario"
                   value={cUser}
-                  onChange={setCUser}
+                  onChange={value => {
+                    setCUser(value);
+                    setCErrors(errors => withoutError(errors, "user"));
+                  }}
                   placeholder="mínimo 3 caracteres"
                   error={cErrors.user}
                 />
                 <Field
+                  id="register-client-password"
                   label="Contraseña"
                   value={cPw}
-                  onChange={setCPw}
+                  onChange={value => {
+                    setCPw(value);
+                    setCErrors(errors => withoutError(errors, "pw"));
+                  }}
                   type={showPw ? "text" : "password"}
                   placeholder="mínimo 8 caracteres"
                   error={cErrors.pw}
                   suffix={
-                    <button type="button" onClick={() => setShowPw(v => !v)} className="text-[#8D93CB] hover:text-[#F7769B] transition-colors">
+                    <button type="button" aria-label={showPw ? "Ocultar contraseña" : "Mostrar contraseña"} onClick={() => setShowPw(v => !v)} className="text-[var(--color-vista-blue-ink)] hover:text-[var(--color-pompadour-ink)] transition-colors">
                       {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   }
                 />
-                <button type="submit" className="mt-2 w-full bg-[#F7769B] text-white font-semibold py-3.5 rounded-xl hover:bg-[#f55d87] active:scale-[0.98] transition-all shadow-md shadow-[#F7769B]/30">
+                <button type="submit" className="mt-2 w-full bg-[var(--color-pompadour-ink)] text-white font-semibold py-3.5 rounded-xl hover:bg-[#8F284B] active:scale-[0.98] transition-all shadow-md shadow-[#F7769B]/30">
                   Crear cuenta
                 </button>
               </form>
             ) : (
-              <form onSubmit={submitProveedor} className="flex flex-col gap-4">
+              <form ref={providerFormRef} onSubmit={submitProveedor} noValidate className="flex flex-col gap-4">
                 <Field
+                  id="register-provider-email"
                   label="Correo electrónico"
                   value={pEmail}
-                  onChange={setPEmail}
+                  onChange={value => {
+                    setPEmail(value);
+                    setPErrors(errors => withoutError(errors, "email"));
+                  }}
                   type="email"
                   placeholder="empresa@correo.com"
                   error={pErrors.email}
                 />
                 <Field
+                  id="register-provider-company"
                   label="Razón social"
                   value={pRazon}
-                  onChange={setPRazon}
+                  onChange={value => {
+                    setPRazon(value);
+                    setPErrors(errors => withoutError(errors, "razon"));
+                  }}
                   placeholder="Nombre legal del negocio"
                   error={pErrors.razon}
                 />
                 <Field
+                  id="register-provider-nit"
                   label="NIT"
                   value={pNit}
-                  onChange={setPNit}
+                  onChange={value => {
+                    setPNit(value);
+                    setPErrors(errors => withoutError(errors, "nit"));
+                  }}
                   placeholder="900123456-7"
                   error={pErrors.nit}
                 />
                 <Field
+                  id="register-provider-user"
                   label="Nombre de usuario"
                   value={pUser}
-                  onChange={setPUser}
+                  onChange={value => {
+                    setPUser(value);
+                    setPErrors(errors => withoutError(errors, "user"));
+                  }}
                   placeholder="mínimo 3 caracteres"
                   error={pErrors.user}
                 />
                 <Field
+                  id="register-provider-password"
                   label="Contraseña"
                   value={pPw}
-                  onChange={setPPw}
+                  onChange={value => {
+                    setPPw(value);
+                    setPErrors(errors => withoutError(errors, "pw"));
+                  }}
                   type={showPw ? "text" : "password"}
                   placeholder="mínimo 8 caracteres"
                   error={pErrors.pw}
                   suffix={
-                    <button type="button" onClick={() => setShowPw(v => !v)} className="text-[#8D93CB] hover:text-[#F7769B] transition-colors">
+                    <button type="button" aria-label={showPw ? "Ocultar contraseña" : "Mostrar contraseña"} onClick={() => setShowPw(v => !v)} className="text-[var(--color-vista-blue-ink)] hover:text-[var(--color-pompadour-ink)] transition-colors">
                       {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   }
                 />
-                <button type="submit" className="mt-2 w-full bg-[#F7769B] text-white font-semibold py-3.5 rounded-xl hover:bg-[#f55d87] active:scale-[0.98] transition-all shadow-md shadow-[#F7769B]/30">
+                <button type="submit" className="mt-2 w-full bg-[var(--color-pompadour-ink)] text-white font-semibold py-3.5 rounded-xl hover:bg-[#8F284B] active:scale-[0.98] transition-all shadow-md shadow-[#F7769B]/30">
                   Crear cuenta
                 </button>
               </form>
             )}
 
-            <p className="text-center text-sm text-[#493333]/60 mt-6">
+            <p className="text-center text-sm text-[#493333]/80 mt-6">
               ¿Ya tienes cuenta?{" "}
-              <button onClick={onGoLogin} className="text-[#F7769B] font-semibold hover:underline">
+              <button type="button" onClick={onGoLogin} className="text-[var(--color-pompadour-ink)] font-semibold hover:underline">
                 Inicia sesión
               </button>
             </p>

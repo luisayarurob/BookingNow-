@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ArrowLeft, Building2, CalendarClock, Save, CheckCircle2, Clock, AlertCircle, Check } from "lucide-react";
 import { BusinessSchedule, DEFAULT_WEEK_SCHEDULE, DayOfWeek } from "../types/schedule";
-import { guardarHorarios } from "../services/apiService";
+import { guardarHorarios, obtenerMiNegocio, type Business } from "../services/apiService";
 
 interface BusinessScheduleFormProps {
   schedule: BusinessSchedule;
@@ -43,10 +43,10 @@ const BusinessScheduleForm: React.FC<BusinessScheduleFormProps> = ({
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 border-b border-[var(--color-dusty-rose)]/60 pb-3">
-        <Clock size={18} className="text-[var(--color-pompadour)]" />
+        <Clock size={18} className="text-[var(--color-pompadour-ink)]" />
         <div>
           <h3 className="font-bold text-base font-['Fraunces',serif]">Configurar Días y Horas</h3>
-          <p className="text-xs text-[var(--color-cacao)]/70">Selecciona los días hábiles del negocio.</p>
+          <p className="text-xs text-[var(--color-cacao)]/80">Selecciona los días hábiles del negocio.</p>
         </div>
       </div>
 
@@ -78,7 +78,7 @@ const BusinessScheduleForm: React.FC<BusinessScheduleFormProps> = ({
                     onClick={() => handleToggleDay(dayKey)}
                     className={`w-6 h-6 rounded-lg flex items-center justify-center border cursor-pointer ${
                       item.isOpen
-                        ? "bg-[var(--color-pompadour)] border-[var(--color-pompadour)] text-white"
+                        ? "bg-[var(--color-pompadour-ink)] border-[var(--color-pompadour-ink)] text-white"
                         : "bg-white border-[var(--color-dusty-rose)] text-transparent"
                     }`}
                   >
@@ -94,15 +94,15 @@ const BusinessScheduleForm: React.FC<BusinessScheduleFormProps> = ({
 
                 {item.isOpen && (
                   <div className="flex items-center gap-2 text-xs">
-                    <span className="text-[var(--color-cacao)]/70">De:</span>
+                    <span className="text-[var(--color-cacao)]/80">De:</span>
                     <input
                       type="time"
                       value={item.openTime}
                       onChange={(e) => handleTimeChange(dayKey, "openTime", e.target.value)}
                       className="px-2 py-1 rounded-lg border border-[var(--color-dusty-rose)] bg-white text-xs"
                     />
-                    <span className="text-[var(--color-cacao)]/50">—</span>
-                    <span className="text-[var(--color-cacao)]/70">A:</span>
+                    <span className="text-[var(--color-cacao)]/80">—</span>
+                    <span className="text-[var(--color-cacao)]/80">A:</span>
                     <input
                       type="time"
                       value={item.closeTime}
@@ -128,12 +128,16 @@ const BusinessScheduleForm: React.FC<BusinessScheduleFormProps> = ({
 
 interface BusinessScheduleScreenProps {
   businessName?: string;
+  businessId: number;
+  onBusinessChange?: (businessId: number, businessName: string) => void;
   onBack?: () => void;
   onSaved?: () => void;
 }
 
 export const BusinessScheduleScreen: React.FC<BusinessScheduleScreenProps> = ({
   businessName = "Mi Negocio",
+  businessId,
+  onBusinessChange,
   onBack,
   onSaved,
 }) => {
@@ -141,6 +145,63 @@ export const BusinessScheduleScreen: React.FC<BusinessScheduleScreenProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [businesses, setBusinesses] = useState<Business[]>([]);
+  const [isLoadingBusinesses, setIsLoadingBusinesses] = useState(true);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setIsLoadingBusinesses(false);
+      return;
+    }
+
+    let isMounted = true;
+    obtenerMiNegocio(token)
+      .then((result) => {
+        if (!isMounted) return;
+        const available = result.negocios?.length
+          ? result.negocios
+          : result.negocio
+            ? [result.negocio]
+            : [];
+        setBusinesses(available);
+
+        if (!businessId && available.length > 0) {
+          const first = available[0] as Business;
+          onBusinessChange?.(
+            Number(first.idNegocio || first.id),
+            first.nombre || "Negocio"
+          );
+        }
+      })
+      .catch((error) => {
+        if (isMounted) {
+          setErrors({
+            general: error instanceof Error ? error.message : "No fue posible cargar los negocios.",
+          });
+        }
+      })
+      .finally(() => {
+        if (isMounted) setIsLoadingBusinesses(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleBusinessChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedId = Number(event.target.value);
+    const selected = businesses.find((business) =>
+      Number(business.idNegocio || business.id) === selectedId
+    );
+    if (!selected) return;
+
+    setSuccessMessage(null);
+    setErrors({});
+    setSchedule(DEFAULT_WEEK_SCHEDULE);
+    onBusinessChange?.(selectedId, selected.nombre || "Negocio");
+  };
 
   const validateSchedule = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -173,8 +234,7 @@ export const BusinessScheduleScreen: React.FC<BusinessScheduleScreenProps> = ({
     setSuccessMessage(null);
     if (!validateSchedule()) return;
 
-    const businessId = Number(localStorage.getItem("idNegocio"));
-    if (!businessId) {
+    if (!Number.isInteger(businessId) || businessId <= 0) {
       setErrors({ general: "No se encontró el negocio que estás configurando." });
       return;
     }
@@ -208,10 +268,33 @@ export const BusinessScheduleScreen: React.FC<BusinessScheduleScreenProps> = ({
               </button>
             )}
             <div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-[var(--color-cream)] border border-[var(--color-dusty-rose)] text-xs font-medium mb-1">
-                <Building2 size={13} className="text-[var(--color-pompadour)]" />
-                <span>{businessName}</span>
-              </div>
+              <label
+                htmlFor="business-schedule-selector"
+                className="mb-1 inline-flex min-w-52 items-center gap-2 rounded-full border border-[var(--color-dusty-rose)] bg-[var(--color-cream)] px-3 py-1 text-xs font-medium shadow-2xs"
+              >
+                <Building2 size={13} className="shrink-0 text-[var(--color-pompadour-ink)]" />
+                {isLoadingBusinesses ? (
+                  <span>Cargando negocios...</span>
+                ) : (
+                  <select
+                    id="business-schedule-selector"
+                    value={businessId || ""}
+                    onChange={handleBusinessChange}
+                    aria-label="Seleccionar negocio para configurar horario"
+                    className="min-w-0 flex-1 cursor-pointer border-0 bg-transparent pr-1 text-xs font-medium text-[var(--color-cacao)] outline-none"
+                  >
+                    {businesses.length === 0 && <option value="">Sin negocios</option>}
+                    {businesses.map((business) => {
+                      const id = Number(business.idNegocio || business.id);
+                      return (
+                        <option key={id} value={id}>
+                          {business.nombre || `Negocio #${id}`}
+                        </option>
+                      );
+                    })}
+                  </select>
+                )}
+              </label>
               <h1 className="text-2xl md:text-3xl font-bold font-['Fraunces',serif]">
                 Horario de Atención
               </h1>
@@ -237,7 +320,7 @@ export const BusinessScheduleScreen: React.FC<BusinessScheduleScreenProps> = ({
               <button
                 type="submit"
                 disabled={isSaving}
-                className="w-full py-3 px-6 rounded-2xl bg-[var(--color-pompadour)] hover:opacity-90 text-white font-bold text-sm tracking-wide shadow-md cursor-pointer flex items-center justify-center gap-2"
+                className="w-full py-3 px-6 rounded-2xl bg-[var(--color-pompadour-ink)] hover:opacity-90 text-white font-bold text-sm tracking-wide shadow-md cursor-pointer flex items-center justify-center gap-2"
               >
                 <Save size={18} />
                 {isSaving ? "Guardando..." : "Guardar Horario"}
@@ -247,7 +330,7 @@ export const BusinessScheduleScreen: React.FC<BusinessScheduleScreenProps> = ({
 
           <div className="md:col-span-5 bg-[var(--color-cream)] border border-[var(--color-dusty-rose)] rounded-3xl p-6 shadow-sm space-y-4">
             <div className="flex items-center gap-2 pb-3 border-b border-[var(--color-dusty-rose)]/60">
-              <CalendarClock size={20} className="text-[var(--color-pompadour)]" />
+              <CalendarClock size={20} className="text-[var(--color-pompadour-ink)]" />
               <h2 className="font-bold text-base font-['Fraunces',serif]">Resumen Semanal</h2>
             </div>
             <div className="space-y-2">

@@ -42,12 +42,12 @@ export const BusinessScheduleForm: React.FC<BusinessScheduleFormProps> = ({
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 border-b border-[var(--color-dusty-rose)]/60 pb-3">
-        <Clock size={18} className="text-[var(--color-pompadour)]" />
+        <Clock size={18} className="text-[var(--color-pompadour-ink)]" />
         <div>
           <h3 className="font-bold text-base font-['Fraunces',serif] text-[var(--color-cacao)]">
             Horario de Atención
           </h3>
-          <p className="text-xs text-[var(--color-cacao)]/70">
+          <p className="text-xs text-[var(--color-cacao)]/80">
             Habilita los días laborables e indica las horas de apertura y cierre.
           </p>
         </div>
@@ -82,14 +82,14 @@ export const BusinessScheduleForm: React.FC<BusinessScheduleFormProps> = ({
                     onClick={() => handleToggleDay(dayKey)}
                     className={`w-6 h-6 rounded-lg flex items-center justify-center border transition-all cursor-pointer ${
                       item.isOpen
-                        ? 'bg-[var(--color-pompadour)] border-[var(--color-pompadour)] text-white shadow-2xs'
-                        : 'bg-white border-[var(--color-dusty-rose)] text-transparent hover:border-[var(--color-pompadour)]'
+                        ? 'bg-[var(--color-pompadour-ink)] border-[var(--color-pompadour-ink)] text-white shadow-2xs'
+                        : 'bg-white border-[var(--color-dusty-rose)] text-transparent hover:border-[var(--color-pompadour-ink)]'
                     }`}
                   >
                     <Check size={14} className={item.isOpen ? 'opacity-100' : 'opacity-0'} />
                   </button>
 
-                  <span className={`text-sm font-semibold ${item.isOpen ? 'text-[var(--color-cacao)]' : 'text-[var(--color-cacao)]/60'}`}>
+                  <span className={`text-sm font-semibold ${item.isOpen ? 'text-[var(--color-cacao)]' : 'text-[var(--color-cacao)]/80'}`}>
                     {item.label}
                   </span>
 
@@ -104,24 +104,24 @@ export const BusinessScheduleForm: React.FC<BusinessScheduleFormProps> = ({
                 {item.isOpen && (
                   <div className="flex items-center gap-2 text-xs">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[var(--color-cacao)]/70">De:</span>
+                      <span className="text-[var(--color-cacao)]/80">De:</span>
                       <input
                         type="time"
                         value={item.openTime}
                         onChange={(e) => handleTimeChange(dayKey, 'openTime', e.target.value)}
-                        className="px-2.5 py-1.5 rounded-xl border border-[var(--color-dusty-rose)] bg-white text-xs font-medium text-[var(--color-cacao)] focus:outline-none focus:border-[var(--color-pompadour)] focus:ring-1 focus:ring-[var(--color-pompadour)]"
+                        className="px-2.5 py-1.5 rounded-xl border border-[var(--color-dusty-rose)] bg-white text-xs font-medium text-[var(--color-cacao)] focus:outline-none focus:border-[var(--color-pompadour-ink)] focus:ring-1 focus:ring-[var(--color-pompadour)]"
                       />
                     </div>
 
-                    <span className="text-[var(--color-cacao)]/50">—</span>
+                    <span className="text-[var(--color-cacao)]/80">—</span>
 
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[var(--color-cacao)]/70">A:</span>
+                      <span className="text-[var(--color-cacao)]/80">A:</span>
                       <input
                         type="time"
                         value={item.closeTime}
                         onChange={(e) => handleTimeChange(dayKey, 'closeTime', e.target.value)}
-                        className="px-2.5 py-1.5 rounded-xl border border-[var(--color-dusty-rose)] bg-white text-xs font-medium text-[var(--color-cacao)] focus:outline-none focus:border-[var(--color-pompadour)] focus:ring-1 focus:ring-[var(--color-pompadour)]"
+                        className="px-2.5 py-1.5 rounded-xl border border-[var(--color-dusty-rose)] bg-white text-xs font-medium text-[var(--color-cacao)] focus:outline-none focus:border-[var(--color-pompadour-ink)] focus:ring-1 focus:ring-[var(--color-pompadour)]"
                       />
                     </div>
                   </div>

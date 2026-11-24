@@ -5,11 +5,11 @@ import type { BusinessRegistration } from "../services/apiService.ts";
 import { CATEGORIAS_NEGOCIO } from "../config/categorias";
 
 interface BusinessRegisterProps {
-  onSuccess: (businessName: string, businessCategory: string) => void;
+  onSuccess: (businessName: string, businessCategory: string, businessId: number) => void;
 }
 
 const inputBase =
-  "w-full rounded-xl border px-4 py-3 text-sm outline-none transition-all placeholder-[#8D93CB] bg-white/60 focus:ring-2 focus:ring-[#F7769B]/40 focus:border-[#F7769B]";
+  "w-full rounded-xl border px-4 py-3 text-sm outline-none transition-all placeholder-[var(--color-vista-blue-ink)] bg-white/60 focus:ring-2 focus:ring-[#F7769B]/40 focus:border-[#F7769B]";
 
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -30,7 +30,7 @@ function fileToBase64(file: File): Promise<string> {
 function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-xs font-semibold tracking-wide text-[#493333]/70 uppercase">{label}</label>
+      <label className="text-xs font-semibold tracking-wide text-[#493333]/80 uppercase">{label}</label>
       {children}
       {error && <p className="text-xs text-red-500">{error}</p>}
     </div>
@@ -51,6 +51,7 @@ export default function BusinessRegister({ onSuccess }: BusinessRegisterProps) {
   const [dragging, setDragging] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [success, setSuccess] = useState(false);
+  const [createdBusinessId, setCreatedBusinessId] = useState<number | null>(null);
 
   const mainPhotoRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
@@ -121,18 +122,28 @@ export default function BusinessRegister({ onSuccess }: BusinessRegisterProps) {
 
       const respuesta = await registrarNegocio(datos);
 
-      console.log("Respuesta del backend:", respuesta);
-
       const businessData = respuesta as {
         idNegocio?: number;
         id?: number;
         negocio?: { idNegocio?: number; id?: number };
+        negocioId?: number;
+        data?: { idNegocio?: number; id?: number };
       };
-      const businessId = businessData.idNegocio || businessData.id || businessData.negocio?.idNegocio || businessData.negocio?.id;
-      if (businessId) {
-        localStorage.setItem("idNegocio", String(businessId));
+      const businessId =
+        businessData.idNegocio ||
+        businessData.id ||
+        businessData.negocioId ||
+        businessData.negocio?.idNegocio ||
+        businessData.negocio?.id ||
+        businessData.data?.idNegocio ||
+        businessData.data?.id;
+      if (!businessId) {
+        throw new Error("El negocio fue creado, pero la API no devolvió su ID. No se puede configurar el horario.");
       }
 
+      localStorage.setItem("idNegocio", String(businessId));
+      sessionStorage.setItem("createdBusinessId", String(businessId));
+      setCreatedBusinessId(businessId);
       setSuccess(true);
     } catch (error) {
       console.error("Error al registrar negocio:", error);
@@ -147,12 +158,15 @@ export default function BusinessRegister({ onSuccess }: BusinessRegisterProps) {
       {success && (
         <div className="fixed inset-0 bg-[#493333]/30 backdrop-blur-sm flex items-center justify-center z-50 p-6">
           <div className="bg-[#FCF6EF] rounded-3xl p-10 max-w-sm w-full text-center shadow-2xl border border-[#E6C1C6]">
-            <CheckCircle2 className="mx-auto mb-4 text-[#F7769B]" size={56} strokeWidth={1.5} />
+            <CheckCircle2 className="mx-auto mb-4 text-[var(--color-pompadour-ink)]" size={56} strokeWidth={1.5} />
             <h2 className="font-display text-2xl text-[#493333] mb-2">¡Negocio creado!</h2>
-            <p className="text-sm text-[#493333]/70 mb-6">Tu negocio fue registrado exitosamente. Ahora configura su horario de atención.</p>
+            <p className="text-sm text-[#493333]/80 mb-6">Tu negocio fue registrado exitosamente. Ahora configura su horario de atención.</p>
             <button
-              onClick={() => onSuccess(name.trim(), category)}
-              className="w-full bg-[#F7769B] text-white font-semibold py-3 rounded-xl hover:bg-[#f55d87] transition-colors"
+              onClick={() => {
+                if (!createdBusinessId) return;
+                onSuccess(name.trim(), category, createdBusinessId);
+              }}
+              className="w-full bg-[var(--color-pompadour-ink)] text-white font-semibold py-3 rounded-xl hover:bg-[#8F284B] transition-colors"
             >
               Configurar horario
             </button>
@@ -163,10 +177,10 @@ export default function BusinessRegister({ onSuccess }: BusinessRegisterProps) {
       <div className="w-full max-w-xl">
         <div className="text-center mb-8">
           <div className="w-14 h-14 rounded-2xl bg-[#F7769B]/15 flex items-center justify-center mx-auto mb-4">
-            <Building2 className="text-[#F7769B]" size={26} strokeWidth={1.5} />
+            <Building2 className="text-[var(--color-pompadour-ink)]" size={26} strokeWidth={1.5} />
           </div>
           <h1 className="font-display text-4xl font-semibold text-[#493333] mb-1">Registra tu negocio</h1>
-          <p className="text-sm text-[#493333]/60">Completa la información para comenzar a ofrecer tus servicios</p>
+          <p className="text-sm text-[#493333]/80">Completa la información para comenzar a ofrecer tus servicios</p>
         </div>
 
         <div className="bg-[#FCF6EF] rounded-3xl shadow-xl border border-[#E6C1C6] p-8">
@@ -219,13 +233,13 @@ export default function BusinessRegister({ onSuccess }: BusinessRegisterProps) {
               <button
                 type="button"
                 onClick={() => setIsVirtual(v => !v)}
-                className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${isVirtual ? "bg-[#F7769B]" : "bg-[#E6C1C6]"}`}
+                className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${isVirtual ? "bg-[var(--color-pompadour-ink)]" : "bg-[#E6C1C6]"}`}
               >
                 <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${isVirtual ? "translate-x-5" : ""}`} />
               </button>
               <div>
                 <p className="text-sm font-semibold text-[#493333]">¿Es modalidad virtual?</p>
-                <p className="text-xs text-[#493333]/50">{isVirtual ? "Servicio en línea — sin dirección física" : "Servicio presencial"}</p>
+                <p className="text-xs text-[#493333]/80">{isVirtual ? "Servicio en línea — sin dirección física" : "Servicio presencial"}</p>
               </div>
             </div>
 
@@ -257,7 +271,7 @@ export default function BusinessRegister({ onSuccess }: BusinessRegisterProps) {
                     </button>
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center gap-2 py-8 text-[#8D93CB]">
+                  <div className="flex flex-col items-center justify-center gap-2 py-8 text-[var(--color-vista-blue-ink)]">
                     <ImagePlus size={28} strokeWidth={1.5} />
                     <span className="text-sm">Haz clic para subir la foto principal</span>
                   </div>
@@ -276,7 +290,7 @@ export default function BusinessRegister({ onSuccess }: BusinessRegisterProps) {
                 className={`cursor-pointer rounded-xl border-2 border-dashed px-4 py-6 transition-colors ${dragging ? "border-[#F7769B] bg-[#F7769B]/5" : "border-[#E6C1C6] hover:border-[#F7769B]"}`}
               >
                 {gallery.length === 0 ? (
-                  <div className="flex flex-col items-center gap-2 text-[#8D93CB]">
+                  <div className="flex flex-col items-center gap-2 text-[var(--color-vista-blue-ink)]">
                     <Upload size={24} strokeWidth={1.5} />
                     <p className="text-sm">Arrastra imágenes o haz clic para seleccionar</p>
                     <p className="text-xs opacity-60">JPG, PNG, GIF, WEBP</p>
@@ -298,7 +312,7 @@ export default function BusinessRegister({ onSuccess }: BusinessRegisterProps) {
                     <button
                       type="button"
                       onClick={() => galleryRef.current?.click()}
-                      className="aspect-square rounded-lg border-2 border-dashed border-[#E6C1C6] flex items-center justify-center text-[#8D93CB] hover:border-[#F7769B] hover:text-[#F7769B] transition-colors"
+                      className="aspect-square rounded-lg border-2 border-dashed border-[#E6C1C6] flex items-center justify-center text-[var(--color-vista-blue-ink)] hover:border-[#F7769B] hover:text-[var(--color-pompadour-ink)] transition-colors"
                     >
                       <ImagePlus size={20} strokeWidth={1.5} />
                     </button>
@@ -310,7 +324,7 @@ export default function BusinessRegister({ onSuccess }: BusinessRegisterProps) {
 
             <button
               type="submit"
-              className="mt-2 w-full bg-[#F7769B] text-white font-semibold py-3.5 rounded-xl hover:bg-[#f55d87] active:scale-[0.98] transition-all shadow-md shadow-[#F7769B]/30"
+              className="mt-2 w-full bg-[var(--color-pompadour-ink)] text-white font-semibold py-3.5 rounded-xl hover:bg-[#8F284B] active:scale-[0.98] transition-all shadow-md shadow-[#F7769B]/30"
             >
               Crear negocio
             </button>

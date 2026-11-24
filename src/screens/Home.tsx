@@ -12,10 +12,10 @@ export default function Home({ onLogout }: HomeProps) {
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#F7769B]/15">
-              <Scissors className="text-[#F7769B]" size={18} strokeWidth={1.5} />
+              <Scissors className="text-[var(--color-pompadour-ink)]" size={18} strokeWidth={1.5} />
             </div>
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#8D93CB]">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--color-vista-blue-ink)]">
                 BookingNow
               </p>
               <p className="font-display text-xl font-semibold text-[#493333]">
@@ -40,12 +40,12 @@ export default function Home({ onLogout }: HomeProps) {
       {/* Main Container */}
       <main className="flex-1 flex items-center justify-center p-6">
         <div className="max-w-md w-full bg-[#FCF6EF] rounded-3xl border border-[#E6C1C6] p-8 text-center shadow-xl">
-          <div className="w-16 h-16 rounded-2xl bg-[#F7769B]/15 flex items-center justify-center mx-auto mb-5 text-[#F7769B]">
+          <div className="w-16 h-16 rounded-2xl bg-[#F7769B]/15 flex items-center justify-center mx-auto mb-5 text-[var(--color-pompadour-ink)]">
             <Wrench size={32} strokeWidth={1.5} />
           </div>
 
           <div className="inline-flex items-center gap-2 rounded-full border border-[#F7C9D7] bg-[#FFDDED] px-3 py-1 text-xs font-semibold text-[#493333] mb-4">
-            <Sparkles size={13} className="text-[#F7769B]" />
+            <Sparkles size={13} className="text-[var(--color-pompadour-ink)]" />
             Módulo en desarrollo
           </div>
 
@@ -53,11 +53,11 @@ export default function Home({ onLogout }: HomeProps) {
             Página en proceso
           </h1>
 
-          <p className="text-sm text-[#493333]/70 leading-relaxed mb-6">
+          <p className="text-sm text-[#493333]/80 leading-relaxed mb-6">
             Estamos diseñando y construyendo esta sección para ofrecerte la mejor experiencia de exploración y reserva de servicios.
           </p>
 
-          <div className="p-4 rounded-2xl bg-[#FFDDED]/50 border border-[#E6C1C6] text-xs text-[#8D93CB] font-medium">
+          <div className="p-4 rounded-2xl bg-[#FFDDED]/50 border border-[#E6C1C6] text-xs text-[var(--color-vista-blue-ink)] font-medium">
             ¡Estará disponible muy pronto!
           </div>
         </div>

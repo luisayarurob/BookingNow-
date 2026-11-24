@@ -34,17 +34,17 @@ export default function ServiceList({ businesses, onAddService, onAddBusiness }:
         <div className="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-[#F7769B]/15 flex items-center justify-center">
-              <Scissors className="text-[#F7769B]" size={18} strokeWidth={1.5} />
+              <Scissors className="text-[var(--color-pompadour-ink)]" size={18} strokeWidth={1.5} />
             </div>
             <div>
-              <p className="text-xs text-[#493333]/50 font-medium">Catálogo de servicios</p>
+              <p className="text-xs text-[#493333]/80 font-medium">Catálogo de servicios</p>
               <h2 className="font-display text-lg font-semibold text-[#493333] leading-tight">Mis negocios</h2>
             </div>
           </div>
           <button
             type="button"
             onClick={onAddBusiness}
-            className="flex items-center gap-2 rounded-xl bg-[#F7769B] px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-[#F7769B]/30 transition-all hover:bg-[#f55d87] active:scale-[0.98]"
+            className="flex items-center gap-2 rounded-xl bg-[var(--color-pompadour-ink)] px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-[#F7769B]/30 transition-all hover:bg-[#8F284B] active:scale-[0.98]"
           >
             <Plus size={16} strokeWidth={2.5} />
             Agregar negocio
@@ -57,7 +57,7 @@ export default function ServiceList({ businesses, onAddService, onAddBusiness }:
           <h1 className="font-display text-5xl font-semibold text-[#493333] leading-tight">
             Mis negocios
           </h1>
-          <p className="text-[#493333]/60 mt-2">
+          <p className="text-[#493333]/80 mt-2">
             {businesses.length} {businesses.length === 1 ? "negocio" : "negocios"} · {serviceCount} {serviceCount === 1 ? "servicio" : "servicios"}
           </p>
         </div>
@@ -65,10 +65,10 @@ export default function ServiceList({ businesses, onAddService, onAddBusiness }:
         {businesses.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
             <div className="w-20 h-20 rounded-3xl bg-[#FCF6EF] border border-[#E6C1C6] flex items-center justify-center">
-              <Scissors className="text-[#8D93CB]" size={36} strokeWidth={1} />
+              <Scissors className="text-[var(--color-vista-blue-ink)]" size={36} strokeWidth={1} />
             </div>
             <p className="font-display text-xl text-[#493333]">Aún no tienes negocios</p>
-            <p className="text-sm text-[#493333]/50 max-w-xs">Registra un negocio para comenzar a ofrecer tus servicios.</p>
+            <p className="text-sm text-[#493333]/80 max-w-xs">Registra un negocio para comenzar a ofrecer tus servicios.</p>
           </div>
         ) : (
           <div className="flex flex-col gap-10">
@@ -80,12 +80,12 @@ export default function ServiceList({ businesses, onAddService, onAddBusiness }:
                 <section key={businessId}>
                   <div className="mb-4 flex items-center justify-between gap-4">
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#8D93CB]">Negocio {index + 1}</p>
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-vista-blue-ink)]">Negocio {index + 1}</p>
                       <h2 className="font-display text-2xl font-semibold text-[#493333]">{business.nombre || "Sin nombre"}</h2>
                     </div>
                     <button
                       onClick={() => onAddService(businessId, business.nombre || "Mi negocio", business.categoria)}
-                      className="flex shrink-0 items-center gap-2 rounded-xl bg-[#F7769B] px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-[#F7769B]/30 transition-all hover:bg-[#f55d87]"
+                      className="flex shrink-0 items-center gap-2 rounded-xl bg-[var(--color-pompadour-ink)] px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-[#F7769B]/30 transition-all hover:bg-[#8F284B]"
                     >
                       <Plus size={16} strokeWidth={2.5} />
                       Nuevo servicio
@@ -180,7 +180,7 @@ function ServiceCard({ service }: { service: BusinessService }) {
 
         {typeof service.rating === "number" && (
           <div className="absolute top-3 right-3 flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 z-10">
-            <Star size={11} className="text-[#F7769B] fill-[#F7769B]" />
+            <Star size={11} className="text-[var(--color-pompadour-ink)] fill-[#F7769B]" />
             <span className="text-xs font-semibold text-[#493333]">{service.rating.toFixed(1)}</span>
           </div>
         )}
@@ -189,18 +189,18 @@ function ServiceCard({ service }: { service: BusinessService }) {
       <div className="p-4 flex flex-col gap-2 flex-1">
         <h3 className="font-display text-base font-semibold text-[#493333] leading-snug">{service.nombre}</h3>
         {service.tipoServicio && (
-          <span className="w-fit rounded-full bg-[#FFDDED] px-2 py-1 text-[11px] font-semibold text-[#F7769B]">
+          <span className="w-fit rounded-full bg-[#FFDDED] px-2 py-1 text-[11px] font-semibold text-[var(--color-pompadour-ink)]">
             {service.tipoServicio}
           </span>
         )}
-        <p className="text-xs text-[#493333]/60 leading-relaxed line-clamp-2">{service.descripcion}</p>
+        <p className="text-xs text-[#493333]/80 leading-relaxed line-clamp-2">{service.descripcion}</p>
 
         <div className="mt-auto pt-3 border-t border-[#E6C1C6] flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-[#8D93CB]">
+          <div className="flex items-center gap-1.5 text-[var(--color-vista-blue-ink)]">
             <Clock size={13} strokeWidth={1.5} />
-            <span className="text-xs font-medium text-[#493333]/70">{service.duracionMinutos} min</span>
+            <span className="text-xs font-medium text-[#493333]/80">{service.duracionMinutos} min</span>
           </div>
-          <div className="flex items-center gap-1 text-[#F7769B]">
+          <div className="flex items-center gap-1 text-[var(--color-pompadour-ink)]">
             <DollarSign size={13} strokeWidth={2} />
             <span className="text-sm font-bold text-[#493333]">{formatPrice(service.precio)}</span>
           </div>

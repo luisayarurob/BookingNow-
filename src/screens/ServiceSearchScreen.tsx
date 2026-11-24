@@ -121,8 +121,8 @@ export const ServiceSearchScreen: React.FC<ServiceSearchScreenProps> = ({ onSele
         <div className="flex flex-col md:flex-row items-start gap-6">
           {/* Menú lateral de categorías */}
           <aside className="w-full md:w-56 shrink-0 bg-[var(--color-cream)] border border-[var(--color-dusty-rose)] rounded-3xl p-4 shadow-xs">
-            <div className="flex flex-col items-stretch gap-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-cacao)]/60 mb-1">
+            <div role="group" aria-label="Filtrar por categoría" className="flex flex-col items-stretch gap-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-cacao)]/80 mb-1">
                 Categoría:
               </span>
               {['TODAS', ...CATEGORIAS_SERVICIO].map((cat) => {
@@ -132,9 +132,10 @@ export const ServiceSearchScreen: React.FC<ServiceSearchScreenProps> = ({ onSele
                     key={cat}
                     type="button"
                     onClick={() => handleCategoryChange(cat)}
+                    aria-pressed={isActive}
                     className={`px-3.5 py-2 rounded-xl text-xs font-semibold text-left transition-all cursor-pointer ${
                       isActive
-                        ? 'bg-[var(--color-pompadour)] text-white shadow-2xs'
+                        ? 'bg-[var(--color-pompadour-ink)] text-white shadow-2xs'
                         : 'bg-white text-[var(--color-cacao)]/80 border border-[var(--color-dusty-rose)] hover:bg-[var(--color-mimi-pink)]/30'
                     }`}
                   >
@@ -152,19 +153,22 @@ export const ServiceSearchScreen: React.FC<ServiceSearchScreenProps> = ({ onSele
           <div className="flex flex-col md:flex-row gap-3">
             {/* Input de Búsqueda por Nombre */}
             <div className="relative flex-1">
-              <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-cacao)]/50" />
+              <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-cacao)]/80" />
+              <label htmlFor="service-search" className="sr-only">Buscar servicios por nombre</label>
               <input
+                id="service-search"
                 type="text"
                 value={searchTerm}
                 onChange={(e) => handleSearchChange(e.target.value)}
                 placeholder='Buscar por nombre (ej. "masaje", "corte", "limpieza")...'
-                className="w-full pl-11 pr-10 py-3 rounded-2xl bg-white border border-[var(--color-dusty-rose)] text-sm focus:outline-none focus:border-[var(--color-pompadour)] focus:ring-2 focus:ring-[var(--color-pompadour)]/20 transition-all placeholder:text-[var(--color-cacao)]/40"
+                className="w-full pl-11 pr-10 py-3 rounded-2xl bg-white border border-[var(--color-dusty-rose)] text-sm focus:outline-none focus:border-[var(--color-pompadour-ink)] focus:ring-2 focus:ring-[var(--color-pompadour)]/20 transition-all placeholder:text-[var(--color-cacao)]/80"
               />
               {searchTerm && (
                 <button
                   type="button"
                   onClick={() => handleSearchChange('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-[var(--color-cacao)]/50 hover:text-[var(--color-cacao)] cursor-pointer"
+                  aria-label="Limpiar búsqueda"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-[var(--color-cacao)]/80 hover:text-[var(--color-cacao)] cursor-pointer"
                 >
                   <X size={16} />
                 </button>
@@ -173,7 +177,7 @@ export const ServiceSearchScreen: React.FC<ServiceSearchScreenProps> = ({ onSele
 
             {/* Contador de resultados */}
             <div className="flex items-center justify-between md:justify-end gap-2 px-3 py-2 text-xs font-semibold text-[var(--color-cacao)]/80">
-              <SlidersHorizontal size={14} className="text-[var(--color-pompadour)]" />
+              <SlidersHorizontal size={14} className="text-[var(--color-pompadour-ink)]" />
               <span>{totalElements} {totalElements === 1 ? 'servicio encontrado' : 'servicios encontrados'}</span>
             </div>
           </div>
@@ -182,35 +186,35 @@ export const ServiceSearchScreen: React.FC<ServiceSearchScreenProps> = ({ onSele
 
         {/* Estado: Sin Resultados */}
         {isLoading ? (
-          <div className="bg-[var(--color-cream)] border border-[var(--color-dusty-rose)] rounded-3xl p-12 text-center text-[var(--color-pompadour)]">
+          <div className="bg-[var(--color-cream)] border border-[var(--color-dusty-rose)] rounded-3xl p-12 text-center text-[var(--color-pompadour-ink)]">
             <LoaderCircle size={30} className="mx-auto animate-spin" />
-            <p className="text-sm text-[var(--color-cacao)]/70 mt-3">Cargando servicios...</p>
+            <p className="text-sm text-[var(--color-cacao)]/80 mt-3">Cargando servicios...</p>
           </div>
         ) : error ? (
           <div className="bg-[var(--color-cream)] border border-dashed border-[var(--color-dusty-rose)] rounded-3xl p-12 text-center space-y-4">
             <h3 className="font-bold text-lg font-['Fraunces',serif] text-[var(--color-cacao)]">No fue posible cargar los servicios</h3>
-            <p className="text-xs text-[var(--color-cacao)]/70">{error}</p>
-            <button type="button" onClick={() => setRetryCount((count) => count + 1)} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--color-pompadour)] text-white text-xs font-bold cursor-pointer hover:opacity-90 transition-all shadow-xs">
+            <p className="text-xs text-[var(--color-cacao)]/80">{error}</p>
+            <button type="button" onClick={() => setRetryCount((count) => count + 1)} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--color-pompadour-ink)] text-white text-xs font-bold cursor-pointer hover:opacity-90 transition-all shadow-xs">
               Reintentar
             </button>
           </div>
         ) : services.length === 0 ? (
           <div className="bg-[var(--color-cream)] border border-dashed border-[var(--color-dusty-rose)] rounded-3xl p-12 text-center space-y-4">
-            <div className="w-14 h-14 rounded-full bg-[var(--color-mimi-pink)]/60 flex items-center justify-center mx-auto text-[var(--color-pompadour)]">
+            <div className="w-14 h-14 rounded-full bg-[var(--color-mimi-pink)]/60 flex items-center justify-center mx-auto text-[var(--color-pompadour-ink)]">
               <Frown size={28} />
             </div>
             <div className="space-y-1">
               <h3 className="font-bold text-lg font-['Fraunces',serif] text-[var(--color-cacao)]">
                 No se encontraron servicios
               </h3>
-              <p className="text-xs text-[var(--color-cacao)]/70 max-w-md mx-auto">
+              <p className="text-xs text-[var(--color-cacao)]/80 max-w-md mx-auto">
                 No encontramos coincidencias para "{searchTerm}" {selectedCategory !== 'TODAS' ? `en la categoría ${selectedCategory}` : ''}. Intenta con otras palabras o limpia los filtros.
               </p>
             </div>
             <button
               type="button"
               onClick={handleClearFilters}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--color-pompadour)] text-white text-xs font-bold cursor-pointer hover:opacity-90 transition-all shadow-xs"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--color-pompadour-ink)] text-white text-xs font-bold cursor-pointer hover:opacity-90 transition-all shadow-xs"
             >
               Restablecer filtros
             </button>
@@ -222,9 +226,15 @@ export const ServiceSearchScreen: React.FC<ServiceSearchScreenProps> = ({ onSele
               {services.map((service) => (
                 <div
                   key={service.id}
-                  onClick={() => onSelectService && onSelectService(service)}
-                  className="bg-[var(--color-cream)] border border-[var(--color-dusty-rose)] rounded-3xl p-4.5 hover:shadow-md transition-all group cursor-pointer flex flex-col justify-between"
+                  className="relative bg-[var(--color-cream)] border border-[var(--color-dusty-rose)] rounded-3xl p-4.5 hover:shadow-md transition-all group flex flex-col justify-between"
                 >
+                  <button
+                    type="button"
+                    onClick={() => onSelectService?.(service)}
+                    disabled={!onSelectService}
+                    aria-label={`Ver detalles del servicio ${service.name}`}
+                    className="absolute inset-0 z-10 cursor-pointer rounded-3xl disabled:cursor-default"
+                  />
                   <div className="space-y-3.5">
                     {/* Imagen y badges */}
                     <div className="relative w-full h-44 rounded-2xl overflow-hidden bg-stone-100">
@@ -235,7 +245,7 @@ export const ServiceSearchScreen: React.FC<ServiceSearchScreenProps> = ({ onSele
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-[var(--color-pompadour)]">
+                        <div className="w-full h-full flex items-center justify-center text-[var(--color-pompadour-ink)]">
                           <Tag size={42} strokeWidth={1.5} />
                         </div>
                       )}
@@ -246,13 +256,13 @@ export const ServiceSearchScreen: React.FC<ServiceSearchScreenProps> = ({ onSele
 
                     {/* Información del servicio */}
                     <div className="space-y-1.5">
-                      <div className="flex items-center gap-1.5 text-xs text-[var(--color-cacao)]/70 font-medium">
-                        <Building2 size={13} className="text-[var(--color-pompadour)]" />
+                      <div className="flex items-center gap-1.5 text-xs text-[var(--color-cacao)]/80 font-medium">
+                        <Building2 size={13} className="text-[var(--color-pompadour-ink)]" />
                         <span>{service.business.name}</span>
                         {service.business.city && <span>• {service.business.city}</span>}
                       </div>
 
-                      <h3 className="font-bold text-lg font-['Fraunces',serif] text-[var(--color-cacao)] group-hover:text-[var(--color-pompadour)] transition-colors leading-snug">
+                      <h3 className="font-bold text-lg font-['Fraunces',serif] text-[var(--color-cacao)] group-hover:text-[var(--color-pompadour-ink)] transition-colors leading-snug">
                         {service.name}
                       </h3>
 
@@ -265,16 +275,16 @@ export const ServiceSearchScreen: React.FC<ServiceSearchScreenProps> = ({ onSele
                   {/* Pie de tarjeta: Precio, Duración y Botón */}
                   <div className="mt-4 pt-3.5 border-t border-[var(--color-dusty-rose)]/60 flex items-center justify-between">
                     <div>
-                      <div className="text-xl font-bold font-['Fraunces',serif] text-[var(--color-pompadour)]">
+                      <div className="text-xl font-bold font-['Fraunces',serif] text-[var(--color-pompadour-ink)]">
                         ${service.price.toLocaleString('es-CO')}
                       </div>
-                      <div className="flex items-center gap-1 text-[11px] text-[var(--color-cacao)]/70 font-medium">
+                      <div className="flex items-center gap-1 text-[11px] text-[var(--color-cacao)]/80 font-medium">
                         <Clock size={11} />
                         <span>{service.durationMinutes} min</span>
                       </div>
                     </div>
 
-                    <span className="inline-flex items-center gap-1 text-xs font-bold text-[var(--color-pompadour)] group-hover:translate-x-1 transition-transform">
+                    <span className="inline-flex items-center gap-1 text-xs font-bold text-[var(--color-pompadour-ink)] group-hover:translate-x-1 transition-transform">
                       Ver detalle <ArrowRight size={14} />
                     </span>
                   </div>

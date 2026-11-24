@@ -164,19 +164,19 @@ export const ServiceDetailScreen: React.FC<ServiceDetailScreenProps> = ({
               Volver a la lista
             </button>
           ) : (
-            <div className="inline-flex items-center gap-1.5 text-xs text-[var(--color-cacao)]/70">
+            <div className="inline-flex items-center gap-1.5 text-xs text-[var(--color-cacao)]/80">
               <span>Servicios</span> / <span className="font-semibold text-[var(--color-cacao)]">{service.category}</span>
             </div>
           )}
 
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--color-cream)] border border-[var(--color-dusty-rose)] text-xs font-semibold text-[var(--color-cacao)] shadow-2xs">
-            <Tag size={13} className="text-[var(--color-pompadour)]" />
+            <Tag size={13} className="text-[var(--color-pompadour-ink)]" />
             <span>{service.category}</span>
           </div>
         </div>
 
         {isLoading && (
-          <p className="text-xs text-[var(--color-cacao)]/70">Cargando información completa del servicio...</p>
+          <p className="text-xs text-[var(--color-cacao)]/80">Cargando información completa del servicio...</p>
         )}
         {loadError && (
           <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
@@ -224,7 +224,7 @@ export const ServiceDetailScreen: React.FC<ServiceDetailScreenProps> = ({
                       onClick={() => setCurrentImageIndex(idx)}
                       className={`w-2 h-2 rounded-full transition-all cursor-pointer ${
                         currentImageIndex === idx 
-                          ? 'w-6 bg-[var(--color-pompadour)]' 
+                          ? 'w-6 bg-[var(--color-pompadour-ink)]'
                           : 'bg-white/60 hover:bg-white'
                       }`}
                       aria-label={`Ir a imagen ${idx + 1}`}
@@ -248,7 +248,7 @@ export const ServiceDetailScreen: React.FC<ServiceDetailScreenProps> = ({
                 {/* Información del negocio oferente */}
                 <div className="flex items-center gap-2 flex-wrap text-xs text-[var(--color-cacao)]/80">
                   <div className="flex items-center gap-1 font-semibold text-[var(--color-cacao)] bg-white px-2.5 py-1 rounded-lg border border-[var(--color-dusty-rose)]/80">
-                    <Building2 size={14} className="text-[var(--color-pompadour)]" />
+                    <Building2 size={14} className="text-[var(--color-pompadour-ink)]" />
                     <span>{service.business.name}</span>
                   </div>
 
@@ -263,7 +263,7 @@ export const ServiceDetailScreen: React.FC<ServiceDetailScreenProps> = ({
                   )}
 
                   {service.business.city && (
-                    <div className="flex items-center gap-1 text-[var(--color-cacao)]/70">
+                    <div className="flex items-center gap-1 text-[var(--color-cacao)]/80">
                       <MapPin size={13} />
                       <span>{service.business.city}{service.business.address ? `, ${service.business.address}` : ''}</span>
                     </div>
@@ -273,11 +273,11 @@ export const ServiceDetailScreen: React.FC<ServiceDetailScreenProps> = ({
 
               {/* Precio y Duración destacados */}
               <div className="sm:text-right shrink-0 bg-white sm:bg-transparent p-4 sm:p-0 rounded-2xl border sm:border-0 border-[var(--color-dusty-rose)]/70">
-                <div className="text-2xl sm:text-3xl font-bold font-['Fraunces',serif] text-[var(--color-pompadour)]">
+                <div className="text-2xl sm:text-3xl font-bold font-['Fraunces',serif] text-[var(--color-pompadour-ink)]">
                   ${service.price.toLocaleString('es-CO')}
                 </div>
-                <div className="flex sm:justify-end items-center gap-1.5 text-xs text-[var(--color-cacao)]/70 font-medium mt-0.5">
-                  <Clock size={13} className="text-[var(--color-pompadour)]" />
+                <div className="flex sm:justify-end items-center gap-1.5 text-xs text-[var(--color-cacao)]/80 font-medium mt-0.5">
+                  <Clock size={13} className="text-[var(--color-pompadour-ink)]" />
                   <span>Duración: {service.durationMinutes} minutos</span>
                 </div>
               </div>
@@ -296,7 +296,7 @@ export const ServiceDetailScreen: React.FC<ServiceDetailScreenProps> = ({
             {/* Garantías y notas breves */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-[var(--color-cacao)]/80">
               <div className="flex items-center gap-2 p-3 rounded-xl bg-white/60 border border-[var(--color-dusty-rose)]/60">
-                <Sparkles size={16} className="text-[var(--color-pompadour)] shrink-0" />
+                <Sparkles size={16} className="text-[var(--color-pompadour-ink)] shrink-0" />
                 <span>Atención personalizada con materiales e insumos certificados.</span>
               </div>
               <div className="flex items-center gap-2 p-3 rounded-xl bg-white/60 border border-[var(--color-dusty-rose)]/60">
@@ -310,7 +310,7 @@ export const ServiceDetailScreen: React.FC<ServiceDetailScreenProps> = ({
               <button
                 type="button"
                 onClick={handleBookClick}
-                className="w-full py-4 px-6 rounded-2xl bg-[var(--color-pompadour)] hover:opacity-90 text-white font-bold text-base tracking-wide shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2.5 cursor-pointer active:scale-[0.99]"
+                className="w-full py-4 px-6 rounded-2xl bg-[var(--color-pompadour-ink)] hover:opacity-90 text-white font-bold text-base tracking-wide shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2.5 cursor-pointer active:scale-[0.99]"
               >
                 <CalendarCheck2 size={20} />
                 Reservar Servicio

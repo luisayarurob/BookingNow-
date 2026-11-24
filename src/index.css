@@ -5,10 +5,13 @@
 @theme inline {
   --color-cacao: #493333;
   --color-pompadour: #F7769B;
+  --color-pompadour-ink: #A33A5D;
   --color-cream: #FCF6EF;
   --color-mimi-pink: #FFDDED;
   --color-vista-blue: #8D93CB;
+  --color-vista-blue-ink: #4F548F;
   --color-dusty-rose: #E6C1C6;
+  --color-control-border: #8A6269;
 
   --font-display: 'Fraunces', Georgia, serif;
   --font-body: 'DM Sans', system-ui, sans-serif;
@@ -19,6 +22,28 @@ html, body, #root {
   font-family: var(--font-body);
   color: #493333;
   background-color: #FFDDED;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex="-1"]:focus {
+  outline: 3px solid #FCF6EF;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 6px #493333;
+}
+
+input:not([type="hidden"]):not([class*="border-red"]):not([class*="border-rose"]),
+select:not([class*="border-red"]):not([class*="border-rose"]),
+textarea:not([class*="border-red"]):not([class*="border-rose"]) {
+  border-color: var(--color-control-border);
+}
+
+button[class*="border-[var(--color-dusty-rose)]"],
+button[class*="border-[#E6C1C6]"] {
+  border-color: var(--color-control-border);
 }
 
 * {
